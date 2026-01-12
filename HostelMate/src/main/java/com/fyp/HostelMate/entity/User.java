@@ -31,6 +31,10 @@ public class User {
     @Column(name = "accountStatus_enum")
     private AccountStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "verificationStatus_enum")
+    private VerificationStatus verificationStatus;
+
     private Instant createdAt;
 
 }

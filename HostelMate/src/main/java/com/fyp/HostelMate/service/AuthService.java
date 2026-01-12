@@ -54,6 +54,7 @@ public class AuthService {
             user.setRole(UserRole.STUDENT);
             user.setPasswordHash(encoder.encode(req.getPassword()));
             user.setStatus(AccountStatus.PENDING);
+            user.setVerificationStatus(VerificationStatus.PENDING);
             user.setCreatedAt(Instant.now());
 
             userRepo.save(user);
@@ -87,6 +88,7 @@ public class AuthService {
             user.setRole(UserRole.HOSTEL);
             user.setPasswordHash(encoder.encode(req.getPassword()));
             user.setStatus(AccountStatus.PENDING);
+            user.setVerificationStatus(VerificationStatus.PENDING);
             user.setCreatedAt(Instant.now());
 
             User savedUser = userRepo.save(user);
@@ -97,7 +99,6 @@ public class AuthService {
             hostel.setHostelName(req.getHostelName());
             hostel.setHostelType(req.getHostelType());
             hostel.setOwnerName(req.getOwnerName());
-            hostel.setVerificationStatus(VerificationStatus.PENDING);
             hostel.setCreatedAt(Instant.now());
 
             hostelRepo.save(hostel);

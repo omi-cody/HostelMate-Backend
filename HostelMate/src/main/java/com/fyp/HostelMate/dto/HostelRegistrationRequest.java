@@ -15,7 +15,7 @@ public class HostelRegistrationRequest {
     @Pattern(regexp = "^[0-9]{10}$")
     private String phone;
 
-    @Size(min = 6)
+    @Size(min = 6, message = "Password must be greater than 6 character")
     private String password;
 
     @NotBlank

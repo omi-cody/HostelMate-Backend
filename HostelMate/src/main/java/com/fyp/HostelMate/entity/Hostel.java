@@ -24,6 +24,7 @@ public class Hostel {
     private User user;
 
     private String hostelName;
+
     private String ownerName;
 
     @Enumerated(EnumType.STRING)

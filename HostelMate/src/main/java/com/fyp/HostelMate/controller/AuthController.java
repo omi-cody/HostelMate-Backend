@@ -26,7 +26,6 @@ public class AuthController {
         this.service = service;
     }
 
-    @PreAuthorize("hasRole('HOSTEL')")
     @GetMapping("/test")
     public String test() {
         return "Public endpoint works!";
