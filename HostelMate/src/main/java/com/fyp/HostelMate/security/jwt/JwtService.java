@@ -1,4 +1,4 @@
-package com.fyp.HostelMate.config;
+package com.fyp.HostelMate.security.jwt;
 
 import com.fyp.HostelMate.entity.User;
 import io.jsonwebtoken.Jwts;

@@ -1,7 +1,7 @@
 package com.fyp.HostelMate.entity;
 
-import com.fyp.HostelMate.enums.HostelType;
-import com.fyp.HostelMate.enums.VerificationStatus;
+import com.fyp.HostelMate.entity.enums.HostelType;
+import com.fyp.HostelMate.entity.enums.VerificationStatus;
 import jakarta.persistence.*;
 import lombok.*;
 

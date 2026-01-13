@@ -1,15 +1,12 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.dto.AuthResponse;
-import com.fyp.HostelMate.dto.HostelRegistrationRequest;
-import com.fyp.HostelMate.dto.LoginRequest;
-import com.fyp.HostelMate.dto.StudentRegistrationRequest;
-import com.fyp.HostelMate.enums.HostelType;
-import com.fyp.HostelMate.service.AuthService;
+import com.fyp.HostelMate.dto.response.AuthResponse;
+import com.fyp.HostelMate.dto.request.HostelRegistrationRequest;
+import com.fyp.HostelMate.dto.request.LoginRequest;
+import com.fyp.HostelMate.dto.request.StudentRegistrationRequest;
+import com.fyp.HostelMate.service.Impl.AuthServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,9 +17,9 @@ import java.util.Map;
 @Validated
 public class AuthController {
 
-    private final AuthService service;
+    private final AuthServiceImpl service;
 
-    public AuthController(AuthService service) {
+    public AuthController(AuthServiceImpl service) {
         this.service = service;
     }
 

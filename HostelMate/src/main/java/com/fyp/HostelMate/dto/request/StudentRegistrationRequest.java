@@ -1,15 +1,15 @@
-package com.fyp.HostelMate.dto;
+package com.fyp.HostelMate.dto.request;
 
-import com.fyp.HostelMate.enums.GenderType;
+import com.fyp.HostelMate.entity.enums.GenderType;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
 
-@Getter
-@Setter
+@Data
 public class StudentRegistrationRequest {
 
     @NotBlank(message = "Full name is required")
+    @Size(min = 5, max=100, message = "Full Name must be between 2 and 100 characters")
     private String fullName;
 
     @Email(message = "Invalid email format")

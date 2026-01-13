@@ -1,4 +1,4 @@
-package com.fyp.HostelMate.enums;
+package com.fyp.HostelMate.entity.enums;
 
 import jakarta.persistence.Column;
 

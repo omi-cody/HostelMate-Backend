@@ -1,11 +1,10 @@
-package com.fyp.HostelMate.dto;
+package com.fyp.HostelMate.dto.request;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
 
 
-@Getter
-@Setter
+@Data
 public class LoginRequest {
 
     @Email(message = "Invalid Email Format")

@@ -1,6 +1,6 @@
 package com.fyp.HostelMate.entity;
 
-import com.fyp.HostelMate.enums.GenderType;
+import com.fyp.HostelMate.entity.enums.GenderType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import lombok.Getter;
