@@ -35,6 +35,26 @@ public class Hostel {
     @Column(name = "verificationStatus_enum")
     private VerificationStatus verificationStatus;
 
+    private String description;
+    private String hostelEmail;
+    private String contactNo;
+    private String address;
+    private Integer totalCapacity;
+    private Double latitude;
+    private Double longitude;
+    private Integer establishedYear;
+
     private Instant createdAt;
+
+    @ManyToMany
+    @JoinTable(
+        name = "hostel_facility",
+        joinColumns = @JoinColumn(name = "hostel_id"),
+        inverseJoinColumns = @JoinColumn(name = "facility_id")
+    )
+    private java.util.Set<Facility> facilities = new java.util.HashSet<>();
+
+    @OneToOne(mappedBy = "hostel", cascade = CascadeType.ALL)
+    private HostelKyc hostelKyc;
 }
 

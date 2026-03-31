@@ -39,4 +39,10 @@ public class User {
 
     private Instant createdAt;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Student student;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private Hostel hostel;
+
 }

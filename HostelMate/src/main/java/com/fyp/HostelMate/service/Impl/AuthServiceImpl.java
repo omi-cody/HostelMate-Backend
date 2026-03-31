@@ -1,5 +1,6 @@
 package com.fyp.HostelMate.service.Impl;
 
+import com.fyp.HostelMate.dto.request.ForgotPasswordRequest;
 import com.fyp.HostelMate.security.jwt.JwtService;
 import com.fyp.HostelMate.dto.response.AuthResponse;
 import com.fyp.HostelMate.dto.request.HostelRegistrationRequest;
@@ -11,14 +12,18 @@ import com.fyp.HostelMate.entity.enums.UserRole;
 import com.fyp.HostelMate.entity.enums.VerificationStatus;
 import com.fyp.HostelMate.exceptions.EmailAlreadyExistsException;
 import com.fyp.HostelMate.service.AuthService;
+import com.fyp.HostelMate.service.EmailService;
+import com.fyp.HostelMate.service.OtpService;
 import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import  com.fyp.HostelMate.repository.*;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -29,15 +34,20 @@ public class AuthServiceImpl implements AuthService {
     private final HostelRepository hostelRepo;
     private final PasswordEncoder encoder;
     private final JwtService jwtService;
+    private final OtpService otpService;
+    private final EmailService emailService;
 
     @Autowired
     public AuthServiceImpl(UserRepository u, StudentRepository s,
-                           HostelRepository h, PasswordEncoder e, JwtService j) {
+                           HostelRepository h, PasswordEncoder e, JwtService j,
+                           OtpService o, EmailService em) {
         this.userRepo = u;
         this.studentRepo = s;
         this.hostelRepo = h;
         this.encoder = e;
         this.jwtService = j;
+        this.otpService = o;
+        this.emailService = em;
     }
 
     // ---------------- STUDENT REGISTER ----------------
@@ -66,9 +76,6 @@ public class AuthServiceImpl implements AuthService {
             student.setCreatedAt(Instant.now());
 
             studentRepo.save(student);
-
-
-
     }
 
     // ---------------- HOSTEL REGISTER ----------------
@@ -80,7 +87,6 @@ public class AuthServiceImpl implements AuthService {
             if (userRepo.existsByEmail(req.getEmail())) {
                 throw new EmailAlreadyExistsException("Email already exists");
             }
-
 
             // Create and save User
             User user = new User();
@@ -105,8 +111,6 @@ public class AuthServiceImpl implements AuthService {
 
             hostelRepo.save(hostel);
             log.info("Hostel registration completed successfully");
-
-
     }
 
     // ---------------- LOGIN (COMMON) ----------------
@@ -123,14 +127,67 @@ public class AuthServiceImpl implements AuthService {
 
             String token = jwtService.generateToken(user);
             String role = user.getRole().toString();
+            String id = user.getUserId().toString();
+
+            boolean requireKyc = false;
+            if( user.getRole() == UserRole.STUDENT) {
+                requireKyc = user.getVerificationStatus() == VerificationStatus.VERIFIED;
+            }else if( user.getRole() == UserRole.HOSTEL) {
+                requireKyc = user.getVerificationStatus() == VerificationStatus.VERIFIED;
+            }
+
             return AuthResponse.builder()
                     .token(token)
                     .role(role)
+                    .id(id)
                     .fullName(user.getFullName())
+                    .kycVerified(requireKyc)
                     .email(user.getEmail())
                     .build();
         }catch (Exception e) {
             throw new RuntimeException("Error in login: " + e.getMessage());
         }
     }
+
+    // ---------------- FORGOT PASSWORD ----------------
+    @Override
+    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepo.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new RuntimeException("User not found with this email"));
+                
+        String otp = otpService.generateOtp(user.getEmail());
+        emailService.sendOtp(user.getEmail(), otp);
+        
+        return ResponseEntity.ok(Map.of("message", "OTP sent to email"));
+    }
+
+    // ---------------- VERIFY OTP ----------------
+    @Override
+    public ResponseEntity<?> verifyOtp(com.fyp.HostelMate.dto.request.VerifyOtpRequest request) {
+        boolean isValid = otpService.checkOtpWithoutEvict(request.getEmail().toLowerCase(), request.getOtp());
+        if (!isValid) {
+            throw new RuntimeException("Invalid or expired OTP");
+        }
+        return ResponseEntity.ok(Map.of("message", "OTP verified successfully"));
+    }
+
+    // ---------------- RESET PASSWORD ----------------
+    @Override
+    @Transactional
+    public ResponseEntity<?> resetPasswordWithOtp(com.fyp.HostelMate.dto.request.ResetPasswordWithOtpRequest request) {
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new RuntimeException("Passwords do not match");
+        }
+        
+
+        
+        User user = userRepo.findByEmail(request.getEmail().toLowerCase())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+                
+        user.setPasswordHash(encoder.encode(request.getNewPassword()));
+        userRepo.save(user);
+        
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
+
 }

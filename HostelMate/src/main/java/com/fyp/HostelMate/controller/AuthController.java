@@ -1,9 +1,12 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.dto.response.AuthResponse;
+import com.fyp.HostelMate.dto.request.ForgotPasswordRequest;
 import com.fyp.HostelMate.dto.request.HostelRegistrationRequest;
 import com.fyp.HostelMate.dto.request.LoginRequest;
+import com.fyp.HostelMate.dto.request.ResetPasswordWithOtpRequest;
 import com.fyp.HostelMate.dto.request.StudentRegistrationRequest;
+import com.fyp.HostelMate.dto.request.VerifyOtpRequest;
+import com.fyp.HostelMate.dto.response.AuthResponse;
 import com.fyp.HostelMate.service.Impl.AuthServiceImpl;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -47,5 +50,19 @@ public class AuthController {
             @Valid @RequestBody LoginRequest req) {
         return ResponseEntity.ok(service.login(req));
     }
-}
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request){
+        return service.forgotPassword(request);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@Valid @RequestBody VerifyOtpRequest request){
+        return service.verifyOtp(request);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordWithOtpRequest request){
+        return service.resetPasswordWithOtp(request);
+    }
+}
