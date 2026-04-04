@@ -72,6 +72,7 @@ public class AuthServiceImpl implements AuthService {
 
             Student student = new Student();
             student.setUser(user);
+            student.setFullName(req.getFullName());
             student.setGender(req.getGender());
             student.setCreatedAt(Instant.now());
 
@@ -128,6 +129,8 @@ public class AuthServiceImpl implements AuthService {
             String token = jwtService.generateToken(user);
             String role = user.getRole().toString();
             String id = user.getUserId().toString();
+
+
 
             boolean requireKyc = false;
             if( user.getRole() == UserRole.STUDENT) {
