@@ -1,14 +1,21 @@
 package com.fyp.HostelMate.service;
 
-import com.fyp.HostelMate.entity.Hostel;
-import com.fyp.HostelMate.entity.User;
-import com.fyp.HostelMate.entity.enums.VerificationStatus;
+import com.fyp.HostelMate.dto.response.HostelProfileResponse;
+import com.fyp.HostelMate.dto.response.StudentProfileResponse;
 
 import java.util.List;
 import java.util.UUID;
 
 public interface AdminService {
-    List<User> getAllUsers();
-    User approveUser(UUID userId, VerificationStatus status);
-    Hostel approveHostel(UUID hostelId, VerificationStatus status);
+    // Students
+    List<StudentProfileResponse> getAllStudents();
+    StudentProfileResponse getStudent(UUID studentId);
+    void verifyStudent(UUID studentId);
+    void rejectStudent(UUID studentId);
+
+    // Hostels
+    List<HostelProfileResponse> getAllHostels();
+    HostelProfileResponse getHostel(UUID hostelId);
+    void verifyHostel(UUID hostelId);
+    void rejectHostel(UUID hostelId);
 }

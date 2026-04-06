@@ -5,5 +5,5 @@ public enum RoomType {
     DOUBLE,
     TRIPLE,
     QUAD,
-    DORMITORY
+
 }

@@ -1,43 +1,71 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.entity.Payment;
-import com.fyp.HostelMate.entity.enums.PaymentStatus;
-import com.fyp.HostelMate.service.PaymentService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fyp.HostelMate.dto.request.CashPaymentRequest;
+import com.fyp.HostelMate.dto.request.KhaltiVerifyRequest;
+import com.fyp.HostelMate.dto.request.PaymentInitiateRequest;
+import com.fyp.HostelMate.dto.response.PaymentResponse;
+import com.fyp.HostelMate.dto.response.PaymentSummaryResponse;
+import com.fyp.HostelMate.entity.User;
+import com.fyp.HostelMate.service.Impl.PaymentServiceImpl;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/payments")
+@RequiredArgsConstructor
 public class PaymentController {
 
-    private final PaymentService paymentService;
+    private final PaymentServiceImpl paymentService;
 
-    @Autowired
-    public PaymentController(PaymentService paymentService) {
-        this.paymentService = paymentService;
+    /** POST /api/student/payments/initiate — start a Khalti payment for this month */
+    @PostMapping("/api/student/payments/initiate")
+    public ResponseEntity<PaymentResponse> initiateKhalti(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody PaymentInitiateRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(paymentService.initiateKhalti(currentUser, request));
     }
 
-    @PostMapping("/create")
-    public ResponseEntity<Payment> createPayment(@RequestBody Payment payment) {
-        return ResponseEntity.ok(paymentService.createPayment(payment));
+    /** POST /api/student/payments/verify — verify Khalti callback and mark payment complete */
+    @PostMapping("/api/student/payments/verify")
+    public ResponseEntity<PaymentResponse> verifyKhalti(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody KhaltiVerifyRequest request) {
+        return ResponseEntity.ok(paymentService.verifyKhalti(currentUser, request));
     }
 
-    @PatchMapping("/{paymentId}/status")
-    public ResponseEntity<Payment> updateStatus(@PathVariable UUID paymentId, @RequestParam PaymentStatus status) {
-        return ResponseEntity.ok(paymentService.updatePaymentStatus(paymentId, status));
+    /** GET /api/student/payments — student full payment history + totals */
+    @GetMapping("/api/student/payments")
+    public ResponseEntity<PaymentSummaryResponse> getStudentHistory(
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(paymentService.getStudentHistory(currentUser));
     }
 
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<Payment>> getStudentPayments(@PathVariable UUID studentId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByStudent(studentId));
+    /** POST /api/hostel/payments/cash — hostel records a cash payment, generates invoice */
+    @PostMapping("/api/hostel/payments/cash")
+    public ResponseEntity<PaymentResponse> recordCash(
+            @AuthenticationPrincipal User currentUser,
+            @Valid @RequestBody CashPaymentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(paymentService.recordCash(currentUser, request));
     }
 
-    @GetMapping("/hostel/{hostelId}")
-    public ResponseEntity<List<Payment>> getHostelPayments(@PathVariable UUID hostelId) {
-        return ResponseEntity.ok(paymentService.getPaymentsByHostel(hostelId));
+    /** GET /api/hostel/payments — hostel views all payments */
+    @GetMapping("/api/hostel/payments")
+    public ResponseEntity<List<PaymentResponse>> getHostelPayments(
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(paymentService.getHostelPayments(currentUser));
+    }
+
+    /** GET /api/hostel/payments/pending — hostel views only pending payments */
+    @GetMapping("/api/hostel/payments/pending")
+    public ResponseEntity<List<PaymentResponse>> getPendingPayments(
+            @AuthenticationPrincipal User currentUser) {
+        return ResponseEntity.ok(paymentService.getPendingHostelPayments(currentUser));
     }
 }

@@ -1,50 +1,107 @@
 package com.fyp.HostelMate.service.Impl;
 
-import com.fyp.HostelMate.entity.MaintenanceRequest;
-import com.fyp.HostelMate.entity.enums.MaintenanceStatus;
-import com.fyp.HostelMate.repository.MaintenanceRequestRepository;
-import com.fyp.HostelMate.service.MaintenanceService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fyp.HostelMate.dto.request.MaintenanceRequestDto;
+import com.fyp.HostelMate.dto.request.MaintenanceStatusRequest;
+import com.fyp.HostelMate.dto.response.MaintenanceResponse;
+import com.fyp.HostelMate.entity.*;
+import com.fyp.HostelMate.entity.enums.NotificationType;
+import com.fyp.HostelMate.exceptions.BadRequestException;
+import com.fyp.HostelMate.exceptions.ResourceNotFoundException;
+import com.fyp.HostelMate.repository.*;
+import com.fyp.HostelMate.service.NotificationService;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
-public class MaintenanceServiceImpl implements MaintenanceService {
+@RequiredArgsConstructor
+public class MaintenanceServiceImpl {
 
     private final MaintenanceRequestRepository maintenanceRepository;
+    private final StudentRepository studentRepository;
+    private final HostelRepository hostelRepository;
+    private final AdmissionRepository admissionRepository;
+    private final NotificationService notificationService;
 
-    @Autowired
-    public MaintenanceServiceImpl(MaintenanceRequestRepository maintenanceRepository) {
-        this.maintenanceRepository = maintenanceRepository;
+    // ── STUDENT: SUBMIT COMPLAINT ─────────────────────────────────────────────
+    @Transactional
+    public MaintenanceResponse submitComplaint(User currentUser, MaintenanceRequestDto req) {
+        Student student = studentRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found."));
+
+        Admission admission = admissionRepository
+                .findByStudent_StudentIdAndIsActiveTrue(student.getStudentId())
+                .orElseThrow(() -> new ResourceNotFoundException("You must be admitted to a hostel to raise a complaint."));
+
+        MaintenanceRequest request = new MaintenanceRequest();
+        request.setStudent(student);
+        request.setHostel(admission.getHostel());
+        request.setRoom(admission.getRoom());
+        request.setComplaintType(req.getComplaintType());
+        request.setDescription(req.getDescription());
+
+        maintenanceRepository.save(request);
+
+        notificationService.send(
+                admission.getHostel().getUser(),
+                NotificationType.NEW_MAINTENANCE_REQUEST,
+                "New maintenance request",
+                student.getFullName() + " raised a complaint: " + req.getComplaintType(),
+                "maintenance:" + request.getRequestId()
+        );
+
+        log.info("Complaint submitted: requestId={}", request.getRequestId());
+        return MaintenanceResponse.from(request);
     }
 
-    @Override
-    public MaintenanceRequest submitRequest(MaintenanceRequest request) {
-        request.setStatus(MaintenanceStatus.REPORTED);
-        return maintenanceRepository.save(request);
+    // ── STUDENT: TRACK OWN COMPLAINTS ────────────────────────────────────────
+    public List<MaintenanceResponse> getMyComplaints(User currentUser) {
+        Student student = studentRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student not found."));
+        return maintenanceRepository.findByStudent_StudentIdOrderByCreatedAtDesc(student.getStudentId())
+                .stream().map(MaintenanceResponse::from).toList();
     }
 
-    @Override
-    public MaintenanceRequest updateRequestStatus(UUID complaintId, MaintenanceStatus status) {
-        MaintenanceRequest request = maintenanceRepository.findById(complaintId)
-                .orElseThrow(() -> new RuntimeException("Maintenance Request not found"));
-        request.setStatus(status);
-        if (status == MaintenanceStatus.RESOLVED) {
-            request.setResolvedAt(Instant.now());
+    // ── HOSTEL: LIST ALL REQUESTS ────────────────────────────────────────────
+    public List<MaintenanceResponse> getHostelComplaints(User currentUser) {
+        Hostel hostel = hostelRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found."));
+        return maintenanceRepository.findByHostel_HostelIdOrderByCreatedAtDesc(hostel.getHostelId())
+                .stream().map(MaintenanceResponse::from).toList();
+    }
+
+    // ── HOSTEL: UPDATE STATUS ─────────────────────────────────────────────────
+    @Transactional
+    public MaintenanceResponse updateStatus(User currentUser, UUID requestId, MaintenanceStatusRequest req) {
+        Hostel hostel = hostelRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found."));
+
+        MaintenanceRequest request = maintenanceRepository.findById(requestId)
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance request not found."));
+
+        if (!request.getHostel().getHostelId().equals(hostel.getHostelId())) {
+            throw new BadRequestException("This request does not belong to your hostel.");
         }
-        return maintenanceRepository.save(request);
-    }
 
-    @Override
-    public List<MaintenanceRequest> getRequestsByStudent(UUID studentId) {
-        return maintenanceRepository.findByStudentStudentId(studentId);
-    }
+        request.setStatus(req.getStatus());
+        request.setResolutionNote(req.getResolutionNote());
+        request.setUpdatedAt(Instant.now());
+        maintenanceRepository.save(request);
 
-    @Override
-    public List<MaintenanceRequest> getRequestsByHostel(UUID hostelId) {
-        return maintenanceRepository.findByHostelHostelId(hostelId);
+        notificationService.send(
+                request.getStudent().getUser(),
+                NotificationType.MAINTENANCE_STATUS_UPDATED,
+                "Complaint status updated",
+                "Your complaint '" + request.getComplaintType() + "' is now " + req.getStatus().name(),
+                "maintenance:" + requestId
+        );
+
+        return MaintenanceResponse.from(request);
     }
 }

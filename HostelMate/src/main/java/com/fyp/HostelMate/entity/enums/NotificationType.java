@@ -1,0 +1,27 @@
+package com.fyp.HostelMate.entity.enums;
+
+public enum NotificationType {
+    // Admin
+    NEW_STUDENT_REGISTRATION,
+    NEW_HOSTEL_REGISTRATION,
+    STUDENT_VERIFIED,
+    HOSTEL_VERIFIED,
+
+    // Student
+    APPLICATION_APPROVED,
+    APPLICATION_REJECTED,
+    VISIT_SCHEDULED,
+    PAYMENT_REMINDER,
+    PAYMENT_CONFIRMED,
+    MAINTENANCE_STATUS_UPDATED,
+    NEW_HOSTEL_EVENT,
+    LEAVE_APPROVED,
+
+    // Hostel
+    NEW_APPLICATION,
+    NEW_MAINTENANCE_REQUEST,
+    PAYMENT_RECEIVED,
+
+    // General
+    GENERAL
+}

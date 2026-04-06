@@ -64,7 +64,6 @@ public class AuthServiceImpl implements AuthService {
             user.setPhone(req.getPhone());
             user.setRole(UserRole.STUDENT);
             user.setPasswordHash(encoder.encode(req.getPassword()));
-            user.setStatus(AccountStatus.ACTIVE);
             user.setVerificationStatus(VerificationStatus.PENDING);
             user.setCreatedAt(Instant.now());
 
@@ -77,6 +76,9 @@ public class AuthServiceImpl implements AuthService {
             student.setCreatedAt(Instant.now());
 
             studentRepo.save(student);
+
+
+//            emailService.sendWelcomeEmail(user.getFullName(), req.getEmail());
     }
 
     // ---------------- HOSTEL REGISTER ----------------
@@ -91,12 +93,11 @@ public class AuthServiceImpl implements AuthService {
 
             // Create and save User
             User user = new User();
-            user.setFullName(req.getOwnerName());
+            user.setFullName(req.getHostelName());
             user.setEmail(req.getEmail());
             user.setPhone(req.getPhone());
             user.setRole(UserRole.HOSTEL);
             user.setPasswordHash(encoder.encode(req.getPassword()));
-            user.setStatus(AccountStatus.ACTIVE);
             user.setVerificationStatus(VerificationStatus.PENDING);
             user.setCreatedAt(Instant.now());
 
@@ -111,6 +112,8 @@ public class AuthServiceImpl implements AuthService {
             hostel.setCreatedAt(Instant.now());
 
             hostelRepo.save(hostel);
+
+//            emailService.sendWelcomeEmail(user.getFullName(), req.getEmail());
             log.info("Hostel registration completed successfully");
     }
 

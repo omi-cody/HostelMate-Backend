@@ -1,11 +1,12 @@
 package com.fyp.HostelMate.service;
 
-import com.fyp.HostelMate.entity.Student;
-import java.util.UUID;
+import com.fyp.HostelMate.dto.request.StudentKycRequest;
+import com.fyp.HostelMate.dto.request.StudentUpdateRequest;
+import com.fyp.HostelMate.dto.response.StudentProfileResponse;
+import com.fyp.HostelMate.entity.User;
 
 public interface StudentService {
-    Student getStudentProfile(UUID studentId);
-    Student updateStudentProfile(UUID studentId, Student studentDetails);
-    
-    void submitKyc(UUID studentId, com.fyp.HostelMate.dto.request.StudentKycRequest request) throws java.io.IOException;
+    void submitKyc(User currentUser, StudentKycRequest request);
+    StudentProfileResponse getProfile(User currentUser);
+    StudentProfileResponse updateProfile(User currentUser, StudentUpdateRequest request);
 }

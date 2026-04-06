@@ -1,51 +1,80 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.entity.Hostel;
+import com.fyp.HostelMate.dto.request.HostelKycRequest;
+import com.fyp.HostelMate.dto.request.HostelUpdateRequest;
+import com.fyp.HostelMate.dto.response.HostelProfileResponse;
+import com.fyp.HostelMate.entity.User;
 import com.fyp.HostelMate.service.HostelService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/hostels")
+@RequiredArgsConstructor
 public class HostelController {
 
     private final HostelService hostelService;
 
-    @Autowired
-    public HostelController(HostelService hostelService) {
-        this.hostelService = hostelService;
+    // ── PUBLIC endpoints (no auth needed) ─────────────────────────────────────
+
+    /**
+     * GET /api/hostels
+     * Returns all verified hostels — used by students to browse.
+     */
+    @GetMapping("/api/hostels")
+    public ResponseEntity<List<HostelProfileResponse>> listHostels() {
+        return ResponseEntity.ok(hostelService.listVerifiedHostels());
     }
 
-    @GetMapping
-    public ResponseEntity<List<Hostel>> getAllHostels() {
-        return ResponseEntity.ok(hostelService.getAllHostels());
+    /**
+     * GET /api/hostels/{id}
+     * Public hostel detail page.
+     */
+    @GetMapping("/api/hostels/{id}")
+    public ResponseEntity<HostelProfileResponse> getHostelDetail(@PathVariable UUID id) {
+        return ResponseEntity.ok(hostelService.getPublicProfile(id));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Hostel> getHostelById(@PathVariable UUID id) {
-        return ResponseEntity.ok(hostelService.getHostelById(id));
+    // ── HOSTEL-ONLY endpoints ─────────────────────────────────────────────────
+
+    /**
+     * POST /api/hostel/kyc
+     * Hostel submits additional profile + documents for admin verification.
+     */
+    @PostMapping(value = "/api/hostel/kyc", consumes = "multipart/form-data")
+    public ResponseEntity<?> submitKyc(
+            @AuthenticationPrincipal User currentUser,
+            @ModelAttribute HostelKycRequest request) {
+
+        hostelService.submitKyc(currentUser, request);
+        return ResponseEntity.ok(Map.of("message", "KYC submitted successfully. Awaiting admin verification."));
     }
 
-    @GetMapping("/search")
-    public ResponseEntity<List<Hostel>> searchHostels(@RequestParam(required = false) String keyword, 
-                                                      @RequestParam(required = false) String city) {
-        return ResponseEntity.ok(hostelService.searchHostels(keyword, city));
+    /**
+     * GET /api/hostel/profile
+     * Returns the full profile of the currently logged-in hostel.
+     */
+    @GetMapping("/api/hostel/profile")
+    public ResponseEntity<HostelProfileResponse> getProfile(
+            @AuthenticationPrincipal User currentUser) {
+
+        return ResponseEntity.ok(hostelService.getProfile(currentUser));
     }
 
-    @PostMapping(value = "/{id}/kyc", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<String> submitKyc(
-            @PathVariable UUID id,
-            @ModelAttribute com.fyp.HostelMate.dto.request.HostelKycRequest request) {
-        try {
-            hostelService.submitKyc(id, request);
-            return ResponseEntity.ok("Hostel KYC submitted successfully and is now pending verification.");
-        } catch (java.io.IOException e) {
-            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to upload KYC documents: " + e.getMessage());
-        }
+    /**
+     * PATCH /api/hostel/profile
+     * Update mutable fields. Registration number, PAN, and registration photo are locked.
+     */
+    @PatchMapping(value = "/api/hostel/profile", consumes = "multipart/form-data")
+    public ResponseEntity<HostelProfileResponse> updateProfile(
+            @AuthenticationPrincipal User currentUser,
+            @ModelAttribute HostelUpdateRequest request) {
+
+        return ResponseEntity.ok(hostelService.updateProfile(currentUser, request));
     }
 }

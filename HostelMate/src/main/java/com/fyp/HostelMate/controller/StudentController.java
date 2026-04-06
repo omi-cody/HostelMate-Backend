@@ -1,59 +1,57 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.entity.Student;
+import com.fyp.HostelMate.dto.request.StudentKycRequest;
+import com.fyp.HostelMate.dto.request.StudentUpdateRequest;
+import com.fyp.HostelMate.dto.response.StudentProfileResponse;
+import com.fyp.HostelMate.entity.User;
 import com.fyp.HostelMate.service.StudentService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.annotation.Validated;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/students")
-@Validated
-
+@RequestMapping("/api/student")
+@RequiredArgsConstructor
 public class StudentController {
 
     private final StudentService studentService;
 
-    @Autowired
-    public StudentController(StudentService studentService) {
-        this.studentService = studentService;
-    }
-
-    // Explicit OPTIONS handler for KYC endpoint
-    public ResponseEntity<?> handleOptions() {
-        return ResponseEntity.ok().build();
-    }
-
-    @GetMapping("/{id}/profile")
-    public ResponseEntity<Student> getProfile(@PathVariable UUID id) {
-        return ResponseEntity.ok(studentService.getStudentProfile(id));
-    }
-
-    @PutMapping("/{id}/profile")
-    public ResponseEntity<Student> updateProfile(@PathVariable UUID id, @RequestBody Student studentDetails) {
-        return ResponseEntity.ok(studentService.updateStudentProfile(id, studentDetails));
-    }
-
-    @PostMapping(value = "/{id}/kyc",
-            consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+    /**
+     * POST /api/student/kyc
+     * Multipart form — student submits additional profile + documents for admin verification.
+     */
+    @PostMapping(value = "/kyc", consumes = "multipart/form-data")
     public ResponseEntity<?> submitKyc(
-            @PathVariable UUID id,
-            @ModelAttribute com.fyp.HostelMate.dto.request.StudentKycRequest request) {
-        try {
-            studentService.submitKyc(id, request);
-            return ResponseEntity.ok("KYC submitted successfully and is now pending verification.");
-        } catch (java.io.IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to upload KYC document: " + e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace(); // Print full error to console
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Error submitting KYC: " + e.getMessage());
-        }
+            @AuthenticationPrincipal User currentUser,
+            @ModelAttribute StudentKycRequest request) {
+
+        studentService.submitKyc(currentUser, request);
+        return ResponseEntity.ok(Map.of("message", "KYC submitted successfully. Awaiting admin verification."));
+    }
+
+    /**
+     * GET /api/student/profile
+     * Returns the full profile of the currently logged-in student.
+     */
+    @GetMapping("/profile")
+    public ResponseEntity<StudentProfileResponse> getProfile(
+            @AuthenticationPrincipal User currentUser) {
+
+        return ResponseEntity.ok(studentService.getProfile(currentUser));
+    }
+
+    /**
+     * PATCH /api/student/profile
+     * Update only the mutable fields. DOB, document info, and permanent address are locked.
+     */
+    @PatchMapping("/profile")
+    public ResponseEntity<StudentProfileResponse> updateProfile(
+            @AuthenticationPrincipal User currentUser,
+            @RequestBody StudentUpdateRequest request) {
+
+        return ResponseEntity.ok(studentService.updateProfile(currentUser, request));
     }
 }

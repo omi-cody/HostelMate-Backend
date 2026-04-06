@@ -1,103 +1,112 @@
 package com.fyp.HostelMate.service.Impl;
 
 import com.fyp.HostelMate.dto.request.StudentKycRequest;
+import com.fyp.HostelMate.dto.request.StudentUpdateRequest;
+import com.fyp.HostelMate.dto.response.StudentProfileResponse;
 import com.fyp.HostelMate.entity.Student;
-import com.fyp.HostelMate.entity.StudentKyc;
 import com.fyp.HostelMate.entity.User;
 import com.fyp.HostelMate.entity.enums.VerificationStatus;
-import com.fyp.HostelMate.repository.StudentKycRepository;
+import com.fyp.HostelMate.exceptions.BadRequestException;
+import com.fyp.HostelMate.exceptions.ResourceNotFoundException;
 import com.fyp.HostelMate.repository.StudentRepository;
-import com.fyp.HostelMate.repository.UserRepository;
-import com.fyp.HostelMate.service.FileService;
 import com.fyp.HostelMate.service.StudentService;
 import jakarta.transaction.Transactional;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.util.UUID;
+import java.time.LocalDate;
 
+@Slf4j
 @Service
+@RequiredArgsConstructor
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
-    private final UserRepository userRepository;
-    private final StudentKycRepository studentKycRepository;
-    private final FileService fileService;
+    private final com.fyp.HostelMate.service.FileUploadService fileUploadService;
 
-    @Autowired
-    public StudentServiceImpl(StudentRepository studentRepository,
-                              UserRepository userRepository,
-                              StudentKycRepository studentKycRepository,
-                              FileService fileService) {
-        this.studentRepository = studentRepository;
-        this.userRepository = userRepository;
-        this.studentKycRepository = studentKycRepository;
-        this.fileService = fileService;
-    }
-
-    @Override
-    public Student getStudentProfile(UUID studentId) {
-        return studentRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Student not found"));
-    }
-
-    @Override
-    public Student updateStudentProfile(UUID studentId, Student studentDetails) {
-        Student existingStudent = getStudentProfile(studentId);
-        existingStudent.setFullName(studentDetails.getFullName());
-        existingStudent.setContactNumber(studentDetails.getContactNumber());
-        existingStudent.setParentGuardianContact(studentDetails.getParentGuardianContact());
-        existingStudent.setDateOfBirth(studentDetails.getDateOfBirth());
-        existingStudent.setAddress(studentDetails.getAddress());
-        return studentRepository.save(existingStudent);
-    }
-
+    // ── KYC SUBMIT ────────────────────────────────────────────────────────────
     @Override
     @Transactional
-    public void submitKyc(UUID studentId, StudentKycRequest request) throws IOException {
-        Student student = getStudentProfile(studentId);
+    public void submitKyc(User currentUser, StudentKycRequest req) {
 
-        // Upload files
-        String profilePictureUrl = null;
-        if (request.getProfilePicture() != null && !request.getProfilePicture().isEmpty()) {
-            profilePictureUrl = fileService.saveFile(request.getProfilePicture(), "student_kyc/profile");
+        if (currentUser.getVerificationStatus() == VerificationStatus.VERIFIED) {
+            throw new BadRequestException("KYC already verified — you cannot resubmit.");
         }
 
-        String identityPhotoUrl = null;
-        if (request.getIdentityPhoto() != null && !request.getIdentityPhoto().isEmpty()) {
-            identityPhotoUrl = fileService.saveFile(request.getIdentityPhoto(), "student_kyc/identity");
+        Student student = studentRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found."));
+
+        // Immutable fields (set once, never changed after KYC)
+        student.setDateOfBirth(LocalDate.parse(req.getDob()));
+        student.setDocumentType(req.getIdType());
+        student.setDocumentNumber(req.getIdentityNumber());
+        student.setProvince(req.getProvince());
+        student.setDistrict(req.getDistrict());
+        student.setMunicipality(req.getMunicipality());
+        student.setTole(req.getTole());
+        student.setWardNumber(Integer.parseInt(req.getWardNo()));
+
+        // Mutable fields also populated at KYC time
+        student.setLevelOfStudy(req.getLevelOfStudy());
+        student.setInstituteName(req.getInstituteName());
+        student.setInstituteAddress(req.getInstituteAddress());
+
+        // File uploads — named by student identity and file type
+        if (req.getProfilePicture() != null && !req.getProfilePicture().isEmpty()) {
+            student.setProfilePicture(fileUploadService.uploadStudentProfile(
+                    req.getProfilePicture(),
+                    student.getStudentId().toString(),
+                    student.getFullName()
+            ));
+        }
+        if (req.getIdentityPhoto() != null && !req.getIdentityPhoto().isEmpty()) {
+            student.setDocumentPhoto(fileUploadService.uploadStudentDocument(
+                    req.getIdentityPhoto(),
+                    student.getStudentId().toString(),
+                    student.getFullName(),
+                    req.getIdType() != null ? req.getIdType() : "document"
+            ));
         }
 
-        // Create or update KYC record
-        StudentKyc kyc = student.getStudentKyc();
-        if (kyc == null) {
-            kyc = new StudentKyc();
-            kyc.setStudent(student);
-        }
-
-        kyc.setProfilePictureUrl(profilePictureUrl);
-        kyc.setDob(request.getDob());
-        kyc.setLevelOfStudy(request.getLevelOfStudy());
-        kyc.setInstituteName(request.getInstituteName());
-        kyc.setInstituteAddress(request.getInstituteAddress());
-        kyc.setIdType(request.getIdType());
-        kyc.setIdentityNumber(request.getIdentityNumber());
-        kyc.setIdentityPhotoUrl(identityPhotoUrl);
-        kyc.setProvince(request.getProvince());
-        kyc.setDistrict(request.getDistrict());
-        kyc.setMunicipality(request.getMunicipality());
-        kyc.setTole(request.getTole());
-        kyc.setWardNo(request.getWardNo());
-
-        studentKycRepository.save(kyc);
-
-        student.setStudentKyc(kyc);
+        // Mark as pending admin review
+        currentUser.setVerificationStatus(VerificationStatus.PENDING);
         studentRepository.save(student);
 
-        // Set user verification status to PENDING
-        User user = student.getUser();
-        user.setVerificationStatus(VerificationStatus.PENDING);
-        userRepository.save(user);
+        log.info("Student KYC submitted for userId={}", currentUser.getUserId());
+    }
+
+    // ── GET PROFILE ───────────────────────────────────────────────────────────
+    @Override
+    public StudentProfileResponse getProfile(User currentUser) {
+        Student student = studentRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found."));
+        return StudentProfileResponse.from(student);
+    }
+
+    // ── UPDATE PROFILE ────────────────────────────────────────────────────────
+    @Override
+    @Transactional
+    public StudentProfileResponse updateProfile(User currentUser, StudentUpdateRequest req) {
+
+        if (currentUser.getVerificationStatus() != VerificationStatus.VERIFIED) {
+            throw new BadRequestException("Profile can only be updated after KYC is verified.");
+        }
+
+        Student student = studentRepository.findByUser_UserId(currentUser.getUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Student profile not found."));
+
+        // Only mutable fields — dob, document, permanent address are locked
+        if (req.getPhone() != null && !req.getPhone().isBlank()) {
+            currentUser.setPhone(req.getPhone());
+        }
+        if (req.getInstituteName() != null)   student.setInstituteName(req.getInstituteName());
+        if (req.getLevelOfStudy() != null)     student.setLevelOfStudy(req.getLevelOfStudy());
+        if (req.getInstituteAddress() != null) student.setInstituteAddress(req.getInstituteAddress());
+        if (req.getProfilePicture() != null)   student.setProfilePicture(req.getProfilePicture());
+
+        studentRepository.save(student);
+        log.info("Student profile updated for userId={}", currentUser.getUserId());
+        return StudentProfileResponse.from(student);
     }
 }

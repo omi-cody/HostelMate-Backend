@@ -30,16 +30,30 @@ public class Student {
     @Column(name = "gender_enum", nullable = false)
     private GenderType gender;
 
+    private String profilePicture;
+
     private String fullName;
-    private String contactNumber;
-    private String parentGuardianContact;
+    private String phoneNumber;
     private LocalDate dateOfBirth;
-    private String address;
+
+    private String email;
+    private String instituteName;
+    private String levelOfStudy;
+    private String instituteAddress;
+    private String documentType;
+    private String documentNumber;
+
+    private String documentPhoto;
+
+    private String province;
+    private String district;
+    private String municipality;
+    private String tole;
+    private int wardNumber;
 
     @CreationTimestamp
     private Instant createdAt;
 
-    @OneToOne(mappedBy = "student", cascade = CascadeType.ALL)
-    private StudentKyc studentKyc;
+
 
 }

@@ -10,6 +10,7 @@ public class HostelKycRequest {
     // Registration / Identity
     private String registrationNumber;
     private MultipartFile registrationPhoto;
+    private String panNumber;
     private String idType;
     private String identityNumber;
     private MultipartFile identityPhoto;

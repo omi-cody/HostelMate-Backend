@@ -1,13 +1,17 @@
 package com.fyp.HostelMate.service;
 
-import com.fyp.HostelMate.entity.Hostel;
+import com.fyp.HostelMate.dto.request.HostelKycRequest;
+import com.fyp.HostelMate.dto.request.HostelUpdateRequest;
+import com.fyp.HostelMate.dto.response.HostelProfileResponse;
+import com.fyp.HostelMate.entity.User;
+
 import java.util.List;
 import java.util.UUID;
 
 public interface HostelService {
-    List<Hostel> getAllHostels();
-    Hostel getHostelById(UUID id);
-    List<Hostel> searchHostels(String keyword, String city);
-    
-    void submitKyc(UUID hostelId, com.fyp.HostelMate.dto.request.HostelKycRequest request) throws java.io.IOException;
+    void submitKyc(User currentUser, HostelKycRequest request);
+    HostelProfileResponse getProfile(User currentUser);
+    HostelProfileResponse updateProfile(User currentUser, HostelUpdateRequest request);
+    HostelProfileResponse getPublicProfile(UUID hostelId);
+    List<HostelProfileResponse> listVerifiedHostels();
 }

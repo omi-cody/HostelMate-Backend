@@ -1,9 +1,11 @@
 package com.fyp.HostelMate.service;
 
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
+
+import java.util.List;
 
 public interface FileService {
-    String saveFile(MultipartFile file, String folder) throws IOException;
-    void deleteFile(String filePath) throws IOException;
+    String uploadFile(MultipartFile file, String userDirectory, String subDirectory, String filePrefix);    void deleteFile(String fileUrl);
+    String getFileUrl(String fileName);
+    boolean validateFile(MultipartFile file, long maxSize, List<String> allowedTypes);
 }
