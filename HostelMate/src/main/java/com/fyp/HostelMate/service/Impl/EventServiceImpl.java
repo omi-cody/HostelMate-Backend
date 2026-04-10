@@ -1,20 +1,24 @@
 package com.fyp.HostelMate.service.Impl;
 
 import com.fyp.HostelMate.dto.request.EventRequest;
-import com.fyp.HostelMate.dto.response.EventResponse;
-import com.fyp.HostelMate.entity.*;
+import com.fyp.HostelMate.entity.Admission;
+import com.fyp.HostelMate.entity.Event;
+import com.fyp.HostelMate.entity.Hostel;
+import com.fyp.HostelMate.entity.enums.AdmissionStatus;
 import com.fyp.HostelMate.entity.enums.NotificationType;
-import com.fyp.HostelMate.exceptions.BadRequestException;
+import com.fyp.HostelMate.exceptions.BusinessException;
 import com.fyp.HostelMate.exceptions.ResourceNotFoundException;
-import com.fyp.HostelMate.repository.*;
-import com.fyp.HostelMate.service.NotificationService;
+import com.fyp.HostelMate.repository.AdmissionRepository;
+import com.fyp.HostelMate.repository.EventRepository;
+import com.fyp.HostelMate.repository.HostelRepository;
+import com.fyp.HostelMate.service.EmailService;
+import com.fyp.HostelMate.util.NotificationUtil;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,100 +27,114 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class EventServiceImpl {
 
-    private final EventRepository eventRepository;
-    private final HostelRepository hostelRepository;
-    private final AdmissionRepository admissionRepository;
-    private final StudentRepository studentRepository;
-    private final NotificationService notificationService;
+    private final EventRepository eventRepo;
+    private final HostelRepository hostelRepo;
+    private final AdmissionRepository admissionRepo;
+    private final EmailService emailService;
+    private final NotificationUtil notificationUtil;
 
-    // ── HOSTEL: CREATE EVENT ──────────────────────────────────────────────────
+    //  CREATE EVENT
     @Transactional
-    public EventResponse createEvent(User currentUser, EventRequest req) {
-        Hostel hostel = hostelRepository.findByUser_UserId(currentUser.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found."));
+    public Event createEvent(String hostelEmail, EventRequest req) {
+
+        Hostel hostel = getHostelByEmail(hostelEmail);
 
         Event event = new Event();
         event.setHostel(hostel);
-        event.setTitle(req.getTitle());
-        event.setDescription(req.getDescription());
-        event.setEventDate(req.getEventDate());
+        event.setEventName(req.getEventName());
+        event.setDetail(req.getDetail());
         event.setLocation(req.getLocation());
+        event.setEventDate(req.getEventDate());
+        event.setCreatedAt(Instant.now());
+        Event saved = eventRepo.save(event);
 
-        eventRepository.save(event);
+        // Notify every student currently living at this hostel
+        notifyAllAdmittedStudents(hostel, saved);
 
-        // Notify all currently admitted students
-        List<Admission> admitted = admissionRepository.findByHostel_HostelIdAndIsActiveTrue(hostel.getHostelId());
-        admitted.forEach(admission -> notificationService.send(
-                admission.getStudent().getUser(),
-                NotificationType.NEW_HOSTEL_EVENT,
-                "New event: " + req.getTitle(),
-                hostel.getHostelName() + " has posted a new event on " + req.getEventDate(),
-                "event:" + event.getEventId()
-        ));
-
-        log.info("Event created: eventId={} hostelId={}", event.getEventId(), hostel.getHostelId());
-        return EventResponse.from(event);
+        log.info("Event '{}' created by hostel {}", req.getEventName(), hostelEmail);
+        return saved;
     }
 
-    // ── HOSTEL: UPDATE EVENT ──────────────────────────────────────────────────
+    //  UPDATE EVENT
     @Transactional
-    public EventResponse updateEvent(User currentUser, UUID eventId, EventRequest req) {
-        Hostel hostel = hostelRepository.findByUser_UserId(currentUser.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found."));
+    public Event updateEvent(String hostelEmail, UUID eventId, EventRequest req) {
 
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found."));
+        Hostel hostel = getHostelByEmail(hostelEmail);
+        Event event = getEventForHostel(hostel, eventId);
 
-        if (!event.getHostel().getHostelId().equals(hostel.getHostelId())) {
-            throw new BadRequestException("This event does not belong to your hostel.");
-        }
-
-        event.setTitle(req.getTitle());
-        event.setDescription(req.getDescription());
-        event.setEventDate(req.getEventDate());
+        event.setEventName(req.getEventName());
+        event.setDetail(req.getDetail());
         event.setLocation(req.getLocation());
+        event.setEventDate(req.getEventDate());
         event.setUpdatedAt(Instant.now());
 
-        eventRepository.save(event);
-        return EventResponse.from(event);
+        log.info("Event {} updated by hostel {}", eventId, hostelEmail);
+        return eventRepo.save(event);
     }
 
-    // ── HOSTEL: DELETE EVENT ──────────────────────────────────────────────────
+    // DELETE EVENT
     @Transactional
-    public void deleteEvent(User currentUser, UUID eventId) {
-        Hostel hostel = hostelRepository.findByUser_UserId(currentUser.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found."));
+    public void deleteEvent(String hostelEmail, UUID eventId) {
+        Hostel hostel = getHostelByEmail(hostelEmail);
+        Event event = getEventForHostel(hostel, eventId);
+        eventRepo.delete(event);
+        log.info("Event {} deleted by hostel {}", eventId, hostelEmail);
+    }
 
-        Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new ResourceNotFoundException("Event not found."));
+    // GET EVENTS FOR HOSTEL (hostel management view)
+    public List<Event> getHostelEvents(String hostelEmail) {
+        Hostel hostel = getHostelByEmail(hostelEmail);
+        return eventRepo.findByHostel_HostelIdOrderByEventDateDesc(hostel.getHostelId());
+    }
 
-        if (!event.getHostel().getHostelId().equals(hostel.getHostelId())) {
-            throw new BadRequestException("This event does not belong to your hostel.");
+    // GET EVENTS FOR STUDENT (events at their current hostel)
+    public List<Event> getEventsForStudent(UUID hostelId) {
+        return eventRepo.findByHostel_HostelIdOrderByEventDateDesc(hostelId);
+    }
+
+    // PRIVATE HELPERS
+
+    // Send in-app notification and email to every student currently admitted to this hostel
+    private void notifyAllAdmittedStudents(Hostel hostel, Event event) {
+
+        List<Admission> activeAdmissions = admissionRepo
+                .findByHostel_HostelIdAndStatusOrderByAdmittedDateDesc(
+                        hostel.getHostelId(), AdmissionStatus.ACTIVE);
+
+        String eventDateStr = event.getEventDate().toString();
+
+        for (Admission admission : activeAdmissions) {
+            var student = admission.getStudent();
+
+            notificationUtil.notifyStudent(student, NotificationType.EVENT_ADDED,
+                    "New event at " + hostel.getHostelName() + ": " +
+                    event.getEventName() + " on " + eventDateStr,
+                    event.getEventId().toString());
+
+            // Email notification runs async so it won't block the loop
+            emailService.sendEventNotificationEmail(
+                    student.getUser().getEmail(),
+                    student.getUser().getFullName(),
+                    hostel.getHostelName(),
+                    event.getEventName(),
+                    eventDateStr,
+                    event.getLocation());
         }
 
-        eventRepository.delete(event);
-        log.info("Event deleted: eventId={}", eventId);
+        log.info("Notified {} students about event '{}'",
+                activeAdmissions.size(), event.getEventName());
     }
 
-    // ── HOSTEL: LIST OWN EVENTS ───────────────────────────────────────────────
-    public List<EventResponse> getHostelEvents(User currentUser) {
-        Hostel hostel = hostelRepository.findByUser_UserId(currentUser.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found."));
-        return eventRepository.findByHostel_HostelIdOrderByEventDateAsc(hostel.getHostelId())
-                .stream().map(EventResponse::from).toList();
+    private Hostel getHostelByEmail(String email) {
+        return hostelRepo.findByUser_Email(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Hostel not found"));
     }
 
-    // ── STUDENT: VIEW UPCOMING EVENTS FOR THEIR HOSTEL ────────────────────────
-    public List<EventResponse> getUpcomingEventsForStudent(User currentUser) {
-        Student student = studentRepository.findByUser_UserId(currentUser.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("Student not found."));
-
-        Admission admission = admissionRepository
-                .findByStudent_StudentIdAndIsActiveTrue(student.getStudentId())
-                .orElseThrow(() -> new ResourceNotFoundException("No active admission found."));
-
-        return eventRepository.findByHostel_HostelIdAndEventDateAfterOrderByEventDateAsc(
-                        admission.getHostel().getHostelId(), LocalDateTime.now())
-                .stream().map(EventResponse::from).toList();
+    private Event getEventForHostel(Hostel hostel, UUID eventId) {
+        Event event = eventRepo.findById(eventId)
+                .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
+        if (!event.getHostel().getHostelId().equals(hostel.getHostelId()))
+            throw new BusinessException("This event does not belong to your hostel");
+        return event;
     }
 }

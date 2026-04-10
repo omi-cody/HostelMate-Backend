@@ -1,57 +1,50 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.dto.request.RoomRequest;
-import com.fyp.HostelMate.dto.response.RoomResponse;
-import com.fyp.HostelMate.entity.User;
-import com.fyp.HostelMate.service.RoomService;
+import com.fyp.HostelMate.dto.request.AddRoomRequest;
+import com.fyp.HostelMate.dto.response.ApiResponse;
+import com.fyp.HostelMate.service.Impl.RoomServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/hostel/rooms")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('HOSTEL')")
 public class RoomController {
 
-    private final RoomService roomService;
+    private final RoomServiceImpl roomService;
 
-    /** POST /api/hostel/rooms — add a room */
     @PostMapping
-    public ResponseEntity<RoomResponse> addRoom(
-            @AuthenticationPrincipal User currentUser,
-            @Valid @RequestBody RoomRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(roomService.addRoom(currentUser, request));
+    public ResponseEntity<ApiResponse<Object>> addRoom(
+            Authentication auth,
+            @Valid @RequestBody AddRoomRequest req) {
+        var room = roomService.addRoom(auth.getName(), req);
+        return ResponseEntity.ok(ApiResponse.success("Room added successfully", room));
     }
 
-    /** GET /api/hostel/rooms — list all rooms in this hostel */
     @GetMapping
-    public ResponseEntity<List<RoomResponse>> listRooms(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(roomService.listRooms(currentUser));
+    public ResponseEntity<ApiResponse<Object>> getMyRooms(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Rooms fetched",
+                roomService.getMyRooms(auth.getName())));
     }
 
-    /** PUT /api/hostel/rooms/{id} — update a room */
-    @PutMapping("/{id}")
-    public ResponseEntity<RoomResponse> updateRoom(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable UUID id,
-            @Valid @RequestBody RoomRequest request) {
-        return ResponseEntity.ok(roomService.updateRoom(currentUser, id, request));
+    @GetMapping("/{roomId}")
+    public ResponseEntity<ApiResponse<Object>> getRoomDetail(
+            Authentication auth, @PathVariable UUID roomId) {
+        return ResponseEntity.ok(ApiResponse.success("Room detail",
+                roomService.getRoomDetail(auth.getName(), roomId)));
     }
 
-    /** DELETE /api/hostel/rooms/{id} — soft-delete (deactivate) a room */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteRoom(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable UUID id) {
-        roomService.deleteRoom(currentUser, id);
-        return ResponseEntity.ok(Map.of("message", "Room deactivated successfully."));
+    @DeleteMapping("/{roomId}")
+    public ResponseEntity<ApiResponse<Void>> deleteRoom(
+            Authentication auth, @PathVariable UUID roomId) {
+        roomService.deleteRoom(auth.getName(), roomId);
+        return ResponseEntity.ok(ApiResponse.success("Room deleted successfully"));
     }
 }

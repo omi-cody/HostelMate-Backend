@@ -4,8 +4,11 @@ import com.fyp.HostelMate.entity.Payment;
 import com.fyp.HostelMate.entity.enums.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,21 +20,25 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     List<Payment> findByHostel_HostelIdOrderByCreatedAtDesc(UUID hostelId);
 
-    List<Payment> findByHostel_HostelIdAndPaymentStatus(UUID hostelId, PaymentStatus status);
+    Optional<Payment> findByAdmission_AdmissionIdAndFeeMonthAndStatus(
+            UUID admissionId, LocalDate feeMonth, PaymentStatus status);
 
-    Optional<Payment> findByKhaltiTransactionId(String khaltiTransactionId);
+    // Find all pending payments for a specific admission (used for admission fee payment)
+    List<Payment> findByAdmission_AdmissionIdAndStatus(UUID admissionId, PaymentStatus status);
 
-    Optional<Payment> findByInvoiceNumber(String invoiceNumber);
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+           "WHERE p.hostel.hostelId = :hostelId AND p.status = 'PAID'")
+    BigDecimal getTotalRevenueForHostel(@Param("hostelId") UUID hostelId);
 
-    /** Total amount paid by a student across all admissions */
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.student.studentId = :studentId AND p.paymentStatus = 'COMPLETED'")
-    Double sumCompletedByStudentId(UUID studentId);
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+           "WHERE p.student.studentId = :studentId " +
+           "AND p.hostel.hostelId = :hostelId AND p.status = 'PAID'")
+    BigDecimal getTotalPaidByStudentAtHostel(@Param("studentId") UUID studentId,
+                                             @Param("hostelId") UUID hostelId);
 
-    /** Total collected by a hostel in completed payments */
-    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p WHERE p.hostel.hostelId = :hostelId AND p.paymentStatus = 'COMPLETED'")
-    Double sumCompletedByHostelId(UUID hostelId);
-
-    /** Check if a student already has a payment record for a given month */
-    boolean existsByAdmission_AdmissionIdAndPaymentForMonthAndPaymentStatusNot(
-            UUID admissionId, java.time.LocalDate paymentForMonth, PaymentStatus status);
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM Payment p " +
+           "WHERE p.student.studentId = :studentId " +
+           "AND p.hostel.hostelId = :hostelId AND p.status = 'PENDING'")
+    BigDecimal getPendingAmountForStudent(@Param("studentId") UUID studentId,
+                                          @Param("hostelId") UUID hostelId);
 }

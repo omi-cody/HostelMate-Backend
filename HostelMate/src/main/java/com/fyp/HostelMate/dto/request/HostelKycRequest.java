@@ -1,39 +1,81 @@
 package com.fyp.HostelMate.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 
+// Hostel fills this out after registration. Includes address, PAN, photos, pricing, and meal plan.
+// File uploads are done first via /api/upload, then the returned URLs are sent here.
 @Data
 public class HostelKycRequest {
-    // Registration / Identity
-    private String registrationNumber;
-    private MultipartFile registrationPhoto;
-    private String panNumber;
-    private String idType;
-    private String identityNumber;
-    private MultipartFile identityPhoto;
+
+    // Hostel branding and basic info
+    private String logoUrl;
+
+    @NotNull(message = "Admission fee is required")
+    @Positive(message = "Admission fee must be a positive amount")
+    private BigDecimal admissionFee;
+
+    @NotNull(message = "Established year is required")
+    private Integer establishedYear;
 
     // Address
+    @NotBlank(message = "Province is required")
     private String province;
+
+    @NotBlank(message = "District is required")
     private String district;
+
+    @NotBlank(message = "Municipality is required")
     private String municipality;
+
+    @NotBlank(message = "Tole is required")
     private String tole;
-    private String wardNo;
 
-    // Hostel Info
-    private List<MultipartFile> hostelPhotos;
-    private String hostelType;
-    private Double admissionFee;
+    @NotBlank(message = "Ward number is required")
+    private String wardNumber;
 
-    // Lists
-    private List<String> rules;
-    private List<String> amenities;
+    // Legal document - cannot be changed once admin verifies
+    @NotBlank(message = "PAN number is required")
+    private String panNumber;
 
-    // Complex structures sent as JSON strings from frontend
-    // Frontend does: formData.append('roomsJson', JSON.stringify(rooms))
-    private String roomsJson;
-    // Frontend does: formData.append('mealsJson', JSON.stringify(meals))
-    private String mealsJson;
+    @NotBlank(message = "PAN document photo is required")
+    private String panDocumentUrl;
+
+    // Up to 4 photos of the hostel - stored as a list of URLs
+    private List<String> hostelPhotoUrls;
+
+    // Room pricing - list of {roomType, monthlyPrice} pairs
+    private List<RoomPricingRequest> roomPricings;
+
+    // Comma-separated list of amenities (e.g. "WiFi, Hot Water, Laundry, Parking")
+    private String amenities;
+
+    // Rules and regulations text
+    private String rulesAndRegulations;
+
+    // Meal plan for each day of the week
+    private List<MealPlanRequest> mealPlans;
+
+    // Nested DTO for room pricing entries
+    @Data
+    public static class RoomPricingRequest {
+        private String roomType;  // SINGLE, DOUBLE, TRIPLE, QUAD
+        @Positive
+        private BigDecimal monthlyPrice;
+    }
+
+    // Nested DTO for one day's meal plan
+    @Data
+    public static class MealPlanRequest {
+        private String dayOfWeek;  // SUNDAY, MONDAY, ... SATURDAY
+        private String morningBreakfast;
+        private String lunch;
+        private String eveningSnack;
+        private String dinner;
+    }
 }

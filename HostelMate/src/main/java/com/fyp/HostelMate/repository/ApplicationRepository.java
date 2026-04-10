@@ -11,14 +11,17 @@ import java.util.UUID;
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, UUID> {
 
-    List<Application> findByStudent_StudentId(UUID studentId);
+    // Student views all their applications (to track across multiple hostels)
+    List<Application> findByStudent_StudentIdOrderByAppliedAtDesc(UUID studentId);
 
-    List<Application> findByHostel_HostelId(UUID hostelId);
+    // Hostel views all applications they received
+    List<Application> findByHostel_HostelIdOrderByAppliedAtDesc(UUID hostelId);
 
-    List<Application> findByHostel_HostelIdAndStatus(UUID hostelId, ApplicationStatus status);
+    // Hostel filters applications by status (e.g. only pending ones)
+    List<Application> findByHostel_HostelIdAndStatusOrderByAppliedAtDesc(UUID hostelId, ApplicationStatus status);
 
-    List<Application> findByStudent_StudentIdAndStatus(UUID studentId, ApplicationStatus status);
-
-    boolean existsByStudent_StudentIdAndHostel_HostelIdAndStatusNot(
-            UUID studentId, UUID hostelId, ApplicationStatus status);
+    // Check if a student already applied to this specific hostel with an active status.
+    // Prevents spamming duplicate applications to the same hostel.
+    boolean existsByStudent_StudentIdAndHostel_HostelIdAndStatusIn(
+            UUID studentId, UUID hostelId, List<ApplicationStatus> statuses);
 }

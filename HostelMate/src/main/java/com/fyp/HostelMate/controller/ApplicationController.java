@@ -1,117 +1,124 @@
 package com.fyp.HostelMate.controller;
 
-import com.fyp.HostelMate.dto.request.ApplicationRequest;
-import com.fyp.HostelMate.dto.request.ApplicationStatusRequest;
-import com.fyp.HostelMate.dto.response.AdmissionResponse;
-import com.fyp.HostelMate.dto.response.ApplicationResponse;
-import com.fyp.HostelMate.entity.User;
-import com.fyp.HostelMate.entity.enums.MealPreference;
-import com.fyp.HostelMate.service.ApplicationService;
+import com.fyp.HostelMate.dto.request.*;
+import com.fyp.HostelMate.dto.response.ApiResponse;
+import com.fyp.HostelMate.service.Impl.ApplicationServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
 public class ApplicationController {
 
-    private final ApplicationService applicationService;
+    private final ApplicationServiceImpl applicationService;
 
-    // ── STUDENT ENDPOINTS ─────────────────────────────────────────────────────
+    // ── STUDENT ENDPOINTS ─────────────────────────────────────────────────
 
-    /**
-     * POST /api/student/applications
-     * Student applies to a hostel for a visit or direct admission.
-     */
-    @PostMapping("/api/student/applications")
-    public ResponseEntity<ApplicationResponse> apply(
-            @AuthenticationPrincipal User currentUser,
-            @Valid @RequestBody ApplicationRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(applicationService.apply(currentUser, request));
+    @PostMapping("/api/student/apply/{hostelId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Object>> applyToHostel(
+            Authentication auth,
+            @PathVariable UUID hostelId,
+            @Valid @RequestBody ApplyRequest req) {
+        var app = applicationService.applyToHostel(auth.getName(), hostelId, req);
+        return ResponseEntity.ok(ApiResponse.success("Application submitted successfully", app));
     }
 
-    /**
-     * GET /api/student/applications
-     * Student views all their applications across hostels.
-     */
     @GetMapping("/api/student/applications")
-    public ResponseEntity<List<ApplicationResponse>> getMyApplications(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(applicationService.getMyApplications(currentUser));
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Object>> getMyApplications(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Your applications",
+                applicationService.getMyApplications(auth.getName())));
     }
 
-    /**
-     * DELETE /api/student/applications/{id}
-     * Student cancels a PENDING application.
-     */
-    @DeleteMapping("/api/student/applications/{id}")
-    public ResponseEntity<?> cancelApplication(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable UUID id) {
-        applicationService.cancelApplication(currentUser, id);
-        return ResponseEntity.ok(Map.of("message", "Application cancelled."));
-    }
+    // ── HOSTEL ENDPOINTS ──────────────────────────────────────────────────
 
-    /**
-     * GET /api/student/admission
-     * Student views their current active admission (room, roommates, fee, meal plan).
-     */
-    @GetMapping("/api/student/admission")
-    public ResponseEntity<AdmissionResponse> getMyAdmission(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(applicationService.getMyAdmission(currentUser));
-    }
-
-    /**
-     * PATCH /api/student/admission/meal-preference
-     * Student sets their meal preference (VEG / NON_VEG).
-     */
-    @PatchMapping("/api/student/admission/meal-preference")
-    public ResponseEntity<AdmissionResponse> updateMealPreference(
-            @AuthenticationPrincipal User currentUser,
-            @RequestParam MealPreference preference) {
-        return ResponseEntity.ok(applicationService.updateMealPreference(currentUser, preference));
-    }
-
-    // ── HOSTEL ENDPOINTS ──────────────────────────────────────────────────────
-
-    /**
-     * GET /api/hostel/applications
-     * Hostel views all incoming applications.
-     */
     @GetMapping("/api/hostel/applications")
-    public ResponseEntity<List<ApplicationResponse>> getIncomingApplications(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(applicationService.getIncomingApplications(currentUser));
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Object>> getHostelApplications(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Applications received",
+                applicationService.getHostelApplications(auth.getName())));
     }
 
-    /**
-     * PATCH /api/hostel/applications/{id}/status
-     * Hostel approves (+ assigns room or schedules visit) or rejects an application.
-     */
-    @PatchMapping("/api/hostel/applications/{id}/status")
-    public ResponseEntity<ApplicationResponse> updateStatus(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable UUID id,
-            @RequestBody ApplicationStatusRequest request) {
-        return ResponseEntity.ok(applicationService.updateApplicationStatus(currentUser, id, request));
+    // Accept a direct admission application and assign a room
+    @PostMapping("/api/hostel/applications/{applicationId}/accept")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> acceptApplication(
+            Authentication auth,
+            @PathVariable UUID applicationId,
+            @Valid @RequestBody AcceptApplicationRequest req) {
+        applicationService.acceptApplication(auth.getName(), applicationId, req);
+        return ResponseEntity.ok(ApiResponse.success("Application accepted and student admitted"));
     }
 
-    /**
-     * GET /api/hostel/admissions
-     * Hostel views the list of all currently admitted students.
-     */
-    @GetMapping("/api/hostel/admissions")
-    public ResponseEntity<List<AdmissionResponse>> getHostelAdmissions(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(applicationService.getHostelAdmissions(currentUser));
+    // Schedule a visit date for a visit-type application
+    @PostMapping("/api/hostel/applications/{applicationId}/schedule-visit")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> scheduleVisit(
+            Authentication auth,
+            @PathVariable UUID applicationId,
+            @Valid @RequestBody ScheduleVisitRequest req) {
+        applicationService.scheduleVisit(auth.getName(), applicationId, req);
+        return ResponseEntity.ok(ApiResponse.success("Visit scheduled successfully"));
+    }
+
+    // After visit has happened - admit the student
+    @PostMapping("/api/hostel/applications/{applicationId}/admit-after-visit")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> admitAfterVisit(
+            Authentication auth,
+            @PathVariable UUID applicationId,
+            @Valid @RequestBody AcceptApplicationRequest req) {
+        applicationService.admitAfterVisit(auth.getName(), applicationId, req);
+        return ResponseEntity.ok(ApiResponse.success("Student admitted after visit"));
+    }
+
+    // Reject or cancel an application
+    @PostMapping("/api/hostel/applications/{applicationId}/reject")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> rejectApplication(
+            Authentication auth,
+            @PathVariable UUID applicationId,
+            @RequestBody RejectApplicationRequest req) {
+        applicationService.rejectApplication(auth.getName(), applicationId, req);
+        return ResponseEntity.ok(ApiResponse.success("Application rejected"));
+    }
+
+    // Hostel deletes/cancels an application record (no financial effect - only status PENDING/REJECTED)
+    @DeleteMapping("/api/hostel/applications/{applicationId}")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> deleteApplication(
+            Authentication auth,
+            @PathVariable UUID applicationId) {
+        applicationService.deleteApplication(auth.getName(), applicationId);
+        return ResponseEntity.ok(ApiResponse.success("Application deleted"));
+    }
+
+    // Student cancels their own application (only PENDING or ACCEPTED-not-yet-admitted)
+    @PatchMapping("/api/student/applications/{applicationId}/cancel")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Void>> cancelApplication(
+            Authentication auth,
+            @PathVariable UUID applicationId) {
+        applicationService.cancelApplication(auth.getName(), applicationId);
+        return ResponseEntity.ok(ApiResponse.success("Application cancelled"));
+    }
+
+    // Hostel allocates room to student AFTER fee payment is confirmed
+    @PostMapping("/api/hostel/admissions/{admissionId}/allocate-room")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> allocateRoom(
+            Authentication auth,
+            @PathVariable UUID admissionId,
+            @RequestBody java.util.Map<String, String> body) {
+        UUID roomId = UUID.fromString(body.get("roomId"));
+        applicationService.allocateRoom(auth.getName(), admissionId, roomId);
+        return ResponseEntity.ok(ApiResponse.success("Room allocated successfully"));
     }
 }

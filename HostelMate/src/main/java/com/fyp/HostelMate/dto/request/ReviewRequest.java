@@ -5,18 +5,15 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-import java.util.UUID;
-
+// Used by student to rate a hostel, and by hostel to rate a student.
+// Both use the same structure - just 1-5 stars and optional written feedback.
 @Data
 public class ReviewRequest {
 
-    @NotNull(message = "admissionId is required")
-    private UUID admissionId;
-
-    @NotNull(message = "rating is required")
+    @NotNull(message = "Rating is required")
     @Min(value = 1, message = "Rating must be at least 1")
-    @Max(value = 5, message = "Rating must be at most 5")
+    @Max(value = 5, message = "Rating cannot exceed 5")
     private Integer rating;
 
-    private String comment;
+    private String reviewText;
 }

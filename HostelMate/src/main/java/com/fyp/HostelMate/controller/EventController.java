@@ -1,18 +1,15 @@
 package com.fyp.HostelMate.controller;
 
 import com.fyp.HostelMate.dto.request.EventRequest;
-import com.fyp.HostelMate.dto.response.EventResponse;
-import com.fyp.HostelMate.entity.User;
+import com.fyp.HostelMate.dto.response.ApiResponse;
 import com.fyp.HostelMate.service.Impl.EventServiceImpl;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -21,44 +18,56 @@ public class EventController {
 
     private final EventServiceImpl eventService;
 
-    /** POST /api/hostel/events — hostel creates an event, notifies all admitted students */
+    // HOSTEL
+
+    // Create a new event - automatically notifies all admitted students
     @PostMapping("/api/hostel/events")
-    public ResponseEntity<EventResponse> createEvent(
-            @AuthenticationPrincipal User currentUser,
-            @Valid @RequestBody EventRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(eventService.createEvent(currentUser, request));
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Object>> createEvent(
+            Authentication auth,
+            @Valid @RequestBody EventRequest req) {
+        var event = eventService.createEvent(auth.getName(), req);
+        return ResponseEntity.ok(ApiResponse.success(
+                "Event created and students notified", event));
     }
 
-    /** GET /api/hostel/events — hostel lists all their events */
+    // Edit event details
+    @PutMapping("/api/hostel/events/{eventId}")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Object>> updateEvent(
+            Authentication auth,
+            @PathVariable UUID eventId,
+            @Valid @RequestBody EventRequest req) {
+        var event = eventService.updateEvent(auth.getName(), eventId, req);
+        return ResponseEntity.ok(ApiResponse.success("Event updated", event));
+    }
+
+    // Remove an event from the hostel's calendar
+    @DeleteMapping("/api/hostel/events/{eventId}")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> deleteEvent(
+            Authentication auth,
+            @PathVariable UUID eventId) {
+        eventService.deleteEvent(auth.getName(), eventId);
+        return ResponseEntity.ok(ApiResponse.success("Event deleted"));
+    }
+
+    // Hostel sees all their past and upcoming events
     @GetMapping("/api/hostel/events")
-    public ResponseEntity<List<EventResponse>> getHostelEvents(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(eventService.getHostelEvents(currentUser));
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Object>> getHostelEvents(Authentication auth) {
+        return ResponseEntity.ok(ApiResponse.success("Events",
+                eventService.getHostelEvents(auth.getName())));
     }
 
-    /** PUT /api/hostel/events/{id} — hostel edits an event */
-    @PutMapping("/api/hostel/events/{id}")
-    public ResponseEntity<EventResponse> updateEvent(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable UUID id,
-            @Valid @RequestBody EventRequest request) {
-        return ResponseEntity.ok(eventService.updateEvent(currentUser, id, request));
-    }
+    //  STUDENT
 
-    /** DELETE /api/hostel/events/{id} — hostel deletes an event */
-    @DeleteMapping("/api/hostel/events/{id}")
-    public ResponseEntity<?> deleteEvent(
-            @AuthenticationPrincipal User currentUser,
-            @PathVariable UUID id) {
-        eventService.deleteEvent(currentUser, id);
-        return ResponseEntity.ok(Map.of("message", "Event deleted."));
-    }
-
-    /** GET /api/student/events — student views upcoming events for their hostel */
-    @GetMapping("/api/student/events")
-    public ResponseEntity<List<EventResponse>> getStudentEvents(
-            @AuthenticationPrincipal User currentUser) {
-        return ResponseEntity.ok(eventService.getUpcomingEventsForStudent(currentUser));
+    // Student sees events at their current hostel
+    @GetMapping("/api/student/events/{hostelId}")
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<ApiResponse<Object>> getEventsForStudent(
+            @PathVariable UUID hostelId) {
+        return ResponseEntity.ok(ApiResponse.success("Hostel events",
+                eventService.getEventsForStudent(hostelId)));
     }
 }

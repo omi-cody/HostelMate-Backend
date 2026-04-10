@@ -4,7 +4,6 @@ import com.fyp.HostelMate.security.jwt.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -22,29 +21,39 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
-    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .cors(Customizer.withDefaults())
+                // Disable CSRF - stateless REST API does not need it
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
+                // CORS headers are ever written - causing CORS errors on all authenticated endpoints.
+                .cors(Customizer.withDefaults())
+
+                // Stateless - no HTTP sessions, every request needs a JWT
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public - no token required
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/actuator/**", "/v3/api-docs/**",
-                                "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/hostels", "/api/hostels/**").permitAll()
-                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/actuator/**").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+
+                        // Role-based access
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/student/**").hasRole("STUDENT")
                         .requestMatchers("/api/hostel/**").hasRole("HOSTEL")
+                        .requestMatchers("/api/student/**").hasRole("STUDENT")
+                        .requestMatchers("/api/upload/**").authenticated()
+
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
+
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 

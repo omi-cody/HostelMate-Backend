@@ -1,9 +1,6 @@
 package com.fyp.HostelMate.security.jwt;
 
-import com.fyp.HostelMate.entity.User;
 import com.fyp.HostelMate.repository.UserRepository;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,9 +17,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -32,6 +29,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+
+
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String authHeader = request.getHeader("Authorization");
 
@@ -43,25 +46,33 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
         try {
-            Claims claims = jwtService.extractAllClaims(token);
-            String email = claims.getSubject();
+            if (!jwtService.isTokenValid(token)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            String email = jwtService.extractEmail(token);
+            String role = jwtService.extractRole(token);
 
             if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                User user = userRepository.findByEmail(email).orElse(null);
-                if (user != null && jwtService.isTokenValid(token, user)) {
-                    String role = "ROLE_" + user.getRole().name();
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    user,
-                                    null,
-                                    List.of(new SimpleGrantedAuthority(role))
-                            );
-                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(auth);
+                boolean userExists = userRepository.existsByEmail(email);
+                if (!userExists) {
+                    filterChain.doFilter(request, response);
+                    return;
                 }
+
+                List<SimpleGrantedAuthority> authorities = List.of(
+                        new SimpleGrantedAuthority("ROLE_" + role)
+                );
+
+                UsernamePasswordAuthenticationToken authToken =
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (JwtException | IllegalArgumentException e) {
-            log.warn("Invalid JWT token: {}", e.getMessage());
+
+        } catch (Exception e) {
+            log.warn("JWT validation failed: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

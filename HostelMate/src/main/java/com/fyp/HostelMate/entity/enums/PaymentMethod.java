@@ -1,7 +1,7 @@
 package com.fyp.HostelMate.entity.enums;
 
+// How the student paid - determines the payment flow
 public enum PaymentMethod {
-    KHALTI,
-    CASH,
-    BANK_TRANSFER
+    KHALTI,  // Online payment via Khalti gateway
+    CASH     // Physical cash - hostel generates invoice manually
 }

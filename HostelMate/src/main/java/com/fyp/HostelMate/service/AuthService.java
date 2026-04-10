@@ -1,18 +1,22 @@
 package com.fyp.HostelMate.service;
 
-import com.fyp.HostelMate.dto.request.ForgotPasswordRequest;
+import com.fyp.HostelMate.dto.request.*;
 import com.fyp.HostelMate.dto.response.AuthResponse;
-import com.fyp.HostelMate.dto.request.HostelRegistrationRequest;
-import com.fyp.HostelMate.dto.request.LoginRequest;
-import com.fyp.HostelMate.dto.request.StudentRegistrationRequest;
-import org.springframework.http.ResponseEntity;
 
 public interface AuthService {
 
-    public void registerStudent(StudentRegistrationRequest studentRegistrationRequest);
-    public void registerHostel(HostelRegistrationRequest hostelRegistrationRequest);
-    public AuthResponse login (LoginRequest loginRequest);
-    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest forgotPasswordRequest);
-    public ResponseEntity<?> verifyOtp(com.fyp.HostelMate.dto.request.VerifyOtpRequest request);
-    public ResponseEntity<?> resetPasswordWithOtp(com.fyp.HostelMate.dto.request.ResetPasswordWithOtpRequest request);
+    void registerStudent(StudentRegistrationRequest request);
+
+    void registerHostel(HostelRegistrationRequest request);
+
+    AuthResponse login(LoginRequest request);
+
+    // Step 1: send OTP to email
+    void sendForgotPasswordOtp(ForgotPasswordRequest request);
+
+    // Step 2: verify OTP is correct (returns success/failure)
+    boolean verifyOtp(VerifyOtpRequest request);
+
+    // Step 3: set the new password after OTP confirmed
+    void resetPasswordWithOtp(ResetPasswordWithOtpRequest request);
 }

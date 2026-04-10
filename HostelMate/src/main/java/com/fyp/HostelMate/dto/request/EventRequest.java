@@ -6,16 +6,18 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+// Hostel creates or updates an event. On creation, all admitted students get a notification and email.
 @Data
 public class EventRequest {
 
-    @NotBlank(message = "title is required")
-    private String title;
+    @NotBlank(message = "Event name is required")
+    private String eventName;
 
-    private String description;
+    private String detail;
 
-    @NotNull(message = "eventDate is required")
-    private LocalDateTime eventDate;
-
+    @NotBlank(message = "Location is required")
     private String location;
+
+    @NotNull(message = "Event date is required")
+    private LocalDateTime eventDate;
 }
