@@ -21,7 +21,7 @@ public interface HostelRepository extends JpaRepository<Hostel, UUID> {
 
     List<Hostel> findByVerificationStatus(VerificationStatus status);
 
-    // ── PUBLIC SEARCH ─────────────────────────────────────────────────────────
+    //  PUBLIC SEARCH ─
     // Hibernate 7 + PostgreSQL cannot resolve the type of a null enum parameter
     // in ":param IS NULL OR col = :param" expressions — it passes the null as
     // bytea and then lower(bytea) fails.  The fix is to provide four concrete

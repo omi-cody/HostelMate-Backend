@@ -28,7 +28,7 @@ public class HostelKycServiceImpl {
     private final HostelRepository hostelRepo;
     private final HostelKycRepository hostelKycRepo;
 
-    // ── SUBMIT KYC (first time) ────────────────────────────────────────────
+    //  SUBMIT KYC (first time) 
     @Transactional
     public void submitKyc(String email, HostelKycRequest req) {
 
@@ -52,7 +52,7 @@ public class HostelKycServiceImpl {
         log.info("Hostel KYC submitted: {}", email);
     }
 
-    // ── RESUBMIT KYC (after rejection) ────────────────────────────────────
+    //  RESUBMIT KYC (after rejection) 
     @Transactional
     public void resubmitKyc(String email, HostelKycRequest req) {
 
@@ -78,14 +78,14 @@ public class HostelKycServiceImpl {
         log.info("Hostel KYC resubmitted: {}", email);
     }
 
-    // ── GET KYC ───────────────────────────────────────────────────────────
+    //  GET KYC
     public HostelKyc getMyKyc(String email) {
         Hostel hostel = getHostelByEmail(email);
         return hostelKycRepo.findByHostel_HostelId(hostel.getHostelId())
                 .orElseThrow(() -> new ResourceNotFoundException("KYC not submitted yet"));
     }
 
-    // ── UPDATE PROFILE (logo, rules, amenities, meal plan) ────────────────
+    //  UPDATE PROFILE (logo, rules, amenities, meal plan) 
     @Transactional
     public void updateProfile(String email, UpdateHostelProfileRequest req) {
 
@@ -111,7 +111,7 @@ public class HostelKycServiceImpl {
         log.info("Hostel profile updated: {}", email);
     }
 
-    // ── PRIVATE HELPERS ───────────────────────────────────────────────────
+    //  PRIVATE HELPERS
 
     private Hostel getHostelByEmail(String email) {
         return hostelRepo.findByUser_Email(email)

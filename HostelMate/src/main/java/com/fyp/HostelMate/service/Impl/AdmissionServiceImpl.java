@@ -40,7 +40,7 @@ public class AdmissionServiceImpl {
     private final EmailService emailService;
     private final NotificationUtil notificationUtil;
 
-    // ── GET STUDENT'S CURRENT ADMISSION (my hostel page) ─────────────────
+    //  GET STUDENT'S CURRENT ADMISSION (my hostel page) ─
     public Admission getMyActiveAdmission(String studentEmail) {
         Student student = getStudentByEmail(studentEmail);
         // Priority: ACTIVE > PENDING_PAYMENT > LEAVE_REQUESTED > LEFT (recent, for review)
@@ -62,7 +62,7 @@ public class AdmissionServiceImpl {
         throw new ResourceNotFoundException("You are not currently admitted to any hostel.");
     }
 
-    // ── STUDENT: REQUEST LEAVE ────────────────────────────────────────────
+    //  STUDENT: REQUEST LEAVE 
     @Transactional
     public void requestLeave(String studentEmail) {
 
@@ -84,7 +84,7 @@ public class AdmissionServiceImpl {
         log.info("Leave requested by student {}", studentEmail);
     }
 
-    // ── HOSTEL: RESPOND TO LEAVE REQUEST ─────────────────────────────────
+    //  HOSTEL: RESPOND TO LEAVE REQUEST
     @Transactional
     public void respondToLeave(String hostelEmail, UUID admissionId, LeaveRemarkRequest req) {
 
@@ -144,7 +144,7 @@ public class AdmissionServiceImpl {
                 req.getAccept() ? "accepted" : "rejected", admissionId, hostelEmail);
     }
 
-    // ── STUDENT: SUBMIT REVIEW AFTER LEAVING ─────────────────────────────
+    //  STUDENT: SUBMIT REVIEW AFTER LEAVING
     @Transactional
     public void submitHostelReview(String studentEmail, UUID admissionId, ReviewRequest req) {
 
@@ -177,7 +177,7 @@ public class AdmissionServiceImpl {
         log.info("Hostel review submitted by {}", studentEmail);
     }
 
-    // ── HOSTEL: SUBMIT REVIEW OF STUDENT AFTER LEAVE ─────────────────────
+    //  HOSTEL: SUBMIT REVIEW OF STUDENT AFTER LEAVE
     @Transactional
     public void submitStudentReview(String hostelEmail, UUID admissionId, ReviewRequest req) {
 
@@ -212,7 +212,7 @@ public class AdmissionServiceImpl {
         log.info("Student review submitted by hostel {} for admission {}", hostelEmail, admissionId);
     }
 
-    // ── STUDENT DASHBOARD ─────────────────────────────────────────────────
+    //  STUDENT DASHBOARD
     public StudentDashboardResponse getStudentDashboard(String studentEmail) {
 
         Student student = getStudentByEmail(studentEmail);
@@ -280,7 +280,7 @@ public class AdmissionServiceImpl {
                 .build();
     }
 
-    // ── HOSTEL DASHBOARD ──────────────────────────────────────────────────
+    //  HOSTEL DASHBOARD 
     public Map<String, Object> getHostelDashboard(String hostelEmail) {
         Hostel hostel = getHostelByEmail(hostelEmail);
         UUID hostelId = hostel.getHostelId();
@@ -298,7 +298,7 @@ public class AdmissionServiceImpl {
         );
     }
 
-    // ── HELPERS ───────────────────────────────────────────────────────────
+    //  HELPERS
 
     private Student getStudentByEmail(String email) {
         return studentRepo.findByUser_Email(email)

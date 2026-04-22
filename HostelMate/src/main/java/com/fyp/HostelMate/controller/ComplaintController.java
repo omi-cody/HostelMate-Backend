@@ -59,4 +59,11 @@ public class ComplaintController {
         complaintService.updateStatus(auth.getName(), requestId, req);
         return ResponseEntity.ok(ApiResponse.success("Request status updated"));
     }
+
+    @DeleteMapping("/api/hostel/requests/{requestId}")
+    @PreAuthorize("hasRole('HOSTEL')")
+    public ResponseEntity<ApiResponse<Void>> deleteRequest(Authentication auth, @PathVariable UUID requestId) {
+        complaintService.deleteRequest(auth.getName(), requestId);
+        return ResponseEntity.ok(ApiResponse.success("Request deleted"));
+    }
 }

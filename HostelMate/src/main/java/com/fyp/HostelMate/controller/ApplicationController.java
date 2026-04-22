@@ -18,7 +18,7 @@ public class ApplicationController {
 
     private final ApplicationServiceImpl applicationService;
 
-    // ── STUDENT ENDPOINTS ─────────────────────────────────────────────────
+    // STUDENT ENDPOINTS
 
     @PostMapping("/api/student/apply/{hostelId}")
     @PreAuthorize("hasRole('STUDENT')")
@@ -37,7 +37,7 @@ public class ApplicationController {
                 applicationService.getMyApplications(auth.getName())));
     }
 
-    // ── HOSTEL ENDPOINTS ──────────────────────────────────────────────────
+    // HOSTEL ENDPOINTS
 
     @GetMapping("/api/hostel/applications")
     @PreAuthorize("hasRole('HOSTEL')")

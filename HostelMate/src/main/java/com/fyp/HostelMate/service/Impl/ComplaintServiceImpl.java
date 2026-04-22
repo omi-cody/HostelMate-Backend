@@ -28,7 +28,7 @@ public class ComplaintServiceImpl {
     private final AdmissionRepository admissionRepo;
     private final NotificationUtil notificationUtil;
 
-    //  STUDENT: SUBMIT COMPLAINT OR MAINTENANCE REQUEST
+    //  STUDENT: SUBMIT COMPLAINT OR MAINTENANCE REQUEST 
     @Transactional
     public ComplaintRequest submitRequest(String studentEmail, ComplaintCreateRequest req) {
 
@@ -53,26 +53,26 @@ public class ComplaintServiceImpl {
         // Notify hostel so they know to check the request queue
         notificationUtil.notifyHostel(admission.getHostel(), NotificationType.COMPLAINT_UPDATE,
                 student.getUser().getFullName() + " submitted a new " +
-                req.getRequestType().name().toLowerCase() + ": " + req.getTitle(),
+                        req.getRequestType().name().toLowerCase() + ": " + req.getTitle(),
                 saved.getRequestId().toString());
 
         log.info("Complaint submitted by {} type {}", studentEmail, req.getRequestType());
         return saved;
     }
 
-    // STUDENT: VIEW MY REQUESTS
+    //  STUDENT: VIEW MY REQUESTS
     public List<ComplaintRequest> getMyRequests(String studentEmail) {
         Student student = getStudentByEmail(studentEmail);
         return complaintRepo.findByStudent_StudentIdOrderByCreatedAtDesc(student.getStudentId());
     }
 
-    // HOSTEL: VIEW ALL REQUESTS
+    //  HOSTEL: VIEW ALL REQUESTS
     public List<ComplaintRequest> getHostelRequests(String hostelEmail) {
         Hostel hostel = getHostelByEmail(hostelEmail);
         return complaintRepo.findByHostel_HostelIdOrderByCreatedAtDesc(hostel.getHostelId());
     }
 
-    // HOSTEL: UPDATE REQUEST STATUS
+    //  HOSTEL: UPDATE REQUEST STATUS
     @Transactional
     public void updateStatus(String hostelEmail, UUID requestId, UpdateComplaintStatusRequest req) {
 
@@ -91,7 +91,7 @@ public class ComplaintServiceImpl {
         // Let the student know their request status was updated
         notificationUtil.notifyStudent(complaint.getStudent(), NotificationType.COMPLAINT_UPDATE,
                 "Your " + complaint.getRequestType().name().toLowerCase() +
-                " '" + complaint.getTitle() + "' is now " + req.getStatus().name(),
+                        " '" + complaint.getTitle() + "' is now " + req.getStatus().name(),
                 requestId.toString());
 
         log.info("Complaint {} updated to {} by hostel", requestId, req.getStatus());
@@ -105,5 +105,19 @@ public class ComplaintServiceImpl {
     private Hostel getHostelByEmail(String email) {
         return hostelRepo.findByUser_Email(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Hostel not found"));
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteRequest(String hostelEmail, java.util.UUID requestId) {
+        Hostel hostel = hostelRepo.findByUser_Email(hostelEmail)
+                .orElseThrow(() -> new com.fyp.HostelMate.exceptions.ResourceNotFoundException("Hostel not found"));
+        ComplaintRequest request = complaintRepo.findById(requestId)
+                .orElseThrow(() -> new com.fyp.HostelMate.exceptions.ResourceNotFoundException("Request not found"));
+        if (!request.getHostel().getHostelId().equals(hostel.getHostelId()))
+            throw new com.fyp.HostelMate.exceptions.BusinessException("This request does not belong to your hostel.");
+        if (request.getStatus() != com.fyp.HostelMate.entity.enums.RequestStatus.RESOLVED)
+            throw new com.fyp.HostelMate.exceptions.BusinessException("Only RESOLVED requests can be deleted.");
+        complaintRepo.deleteById(requestId);
+        log.info("Request {} deleted by hostel", requestId);
     }
 }

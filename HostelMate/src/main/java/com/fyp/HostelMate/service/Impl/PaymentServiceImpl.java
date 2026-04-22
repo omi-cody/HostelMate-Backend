@@ -62,7 +62,7 @@ public class PaymentServiceImpl {
     @Value("${app.frontend-url:http://localhost:5173}")
     private String frontendUrl;
 
-    // ── STUDENT: INITIATE KHALTI PAYMENT ─────────────────────────────────
+    // STUDENT: INITIATE KHALTI PAYMENT ─
     // Flow: frontend calls this → backend calls Khalti initiate API →
     //       returns Khalti payment_url → frontend opens that URL →
     //       student pays on Khalti → Khalti redirects to return_url →
@@ -192,7 +192,7 @@ public class PaymentServiceImpl {
         );
     }
 
-    // ── STUDENT: VERIFY KHALTI PAYMENT ───────────────────────────────────
+    // STUDENT: VERIFY KHALTI PAYMENT ─
     // Called by frontend after Khalti redirects back with ?pidx=xxx in the URL.
     // We call Khalti's lookup API to confirm the transaction actually completed.
     @Transactional
@@ -216,7 +216,7 @@ public class PaymentServiceImpl {
             payment.setPaidAt(Instant.now());
             paymentRepo.save(payment);
 
-            // ── Activate admission if this was the admission fee ──────────
+            // Activate admission if this was the admission fee 
             if (payment.getAdmission() != null &&
                     payment.getAdmission().getStatus() == AdmissionStatus.PENDING_PAYMENT) {
                 Admission adm = payment.getAdmission();
@@ -252,7 +252,7 @@ public class PaymentServiceImpl {
         return payment;
     }
 
-    // ── HOSTEL: GENERATE CASH INVOICE ────────────────────────────────────
+    // HOSTEL: GENERATE CASH INVOICE 
     @Transactional
     public Payment generateCashInvoice(String hostelEmail, GenerateInvoiceRequest req) {
 
@@ -306,19 +306,19 @@ public class PaymentServiceImpl {
         return saved;
     }
 
-    // ── STUDENT: VIEW PAYMENT HISTORY ────────────────────────────────────
+    // STUDENT: VIEW PAYMENT HISTORY 
     public List<Payment> getMyPaymentHistory(String studentEmail) {
         Student student = getStudentByEmail(studentEmail);
         return paymentRepo.findByStudent_StudentIdOrderByCreatedAtDesc(student.getStudentId());
     }
 
-    // ── HOSTEL: VIEW PAYMENT HISTORY ──────────────────────────────────────
+    // HOSTEL: VIEW PAYMENT HISTORY 
     public List<Payment> getHostelPaymentHistory(String hostelEmail) {
         Hostel hostel = getHostelByEmail(hostelEmail);
         return paymentRepo.findByHostel_HostelIdOrderByCreatedAtDesc(hostel.getHostelId());
     }
 
-    // ── EXPORT PAYMENT HISTORY AS PDF ─────────────────────────────────────
+    // EXPORT PAYMENT HISTORY AS PDF ─
     public byte[] exportPaymentHistoryAsPdf(String userEmail, boolean isHostel) {
 
         List<Payment> payments = isHostel
@@ -376,7 +376,7 @@ public class PaymentServiceImpl {
         }
     }
 
-    // ── PRIVATE: CALL KHALTI LOOKUP API ──────────────────────────────────
+    // PRIVATE: CALL KHALTI LOOKUP API 
     private boolean callKhaltiVerifyApi(String pidx, BigDecimal expectedAmount) {
         try {
             Map<?, ?> response = webClientBuilder.build()

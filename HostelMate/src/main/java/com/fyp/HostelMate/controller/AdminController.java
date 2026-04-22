@@ -36,7 +36,7 @@ public class AdminController {
     private final AdmissionRepository admissionRepo;
     private final PaymentRepository paymentRepo;
 
-    // ── DASHBOARD with chart data ──────────────────────────────────────────
+    // DASHBOARD with chart data
     @GetMapping("/dashboard")
     public ResponseEntity<ApiResponse<Object>> getDashboard() {
         var stats = adminService.getDashboardStats();
@@ -58,7 +58,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Dashboard stats", result));
     }
 
-    // ── NOTIFICATIONS (KYC submissions) ───────────────────────────────────
+    // NOTIFICATIONS (KYC submissions)
     @GetMapping("/notifications")
     public ResponseEntity<ApiResponse<Object>> getAdminNotifications() {
         // Build admin notifications from pending KYC submissions
@@ -97,11 +97,11 @@ public class AdminController {
     @GetMapping("/notifications/count")
     public ResponseEntity<ApiResponse<Object>> getNotificationCount() {
         long count = studentKycRepo.findByKycStatus(VerificationStatus.SUBMITTED).size()
-                   + hostelKycRepo.findByKycStatus(VerificationStatus.SUBMITTED).size();
+                + hostelKycRepo.findByKycStatus(VerificationStatus.SUBMITTED).size();
         return ResponseEntity.ok(ApiResponse.success("Unread count", Map.of("count", count)));
     }
 
-    // ── REVIEWS ───────────────────────────────────────────────────────────
+    // REVIEWS
     @GetMapping("/reviews/hostels")
     public ResponseEntity<ApiResponse<Object>> getAllHostelReviews() {
         return ResponseEntity.ok(ApiResponse.success("Hostel reviews", hostelReviewRepo.findAll()));
@@ -112,7 +112,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Student reviews", studentReviewRepo.findAll()));
     }
 
-    // ── SITE CONTENT ──────────────────────────────────────────────────────
+    //SITE CONTENT
     @GetMapping("/site-content")
     public ResponseEntity<ApiResponse<Object>> getSiteContent() {
         return ResponseEntity.ok(ApiResponse.success("Site content", siteContentService.getSiteContent()));
@@ -123,7 +123,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Homepage updated", siteContentService.updateSiteContent(req)));
     }
 
-    // ── KYC ───────────────────────────────────────────────────────────────
+    //KYC
     @GetMapping("/kyc/students/pending")
     public ResponseEntity<ApiResponse<Object>> getPendingStudentKyc() {
         return ResponseEntity.ok(ApiResponse.success("Pending student KYC list", adminService.getAllPendingStudentKyc()));
@@ -146,7 +146,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Hostel KYC updated"));
     }
 
-    // ── LISTS ─────────────────────────────────────────────────────────────
+    //LISTS
     @GetMapping("/students")
     public ResponseEntity<ApiResponse<Object>> getAllStudents() {
         return ResponseEntity.ok(ApiResponse.success("All students", adminService.getAllStudents()));
@@ -157,7 +157,7 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("All hostels", adminService.getAllHostels()));
     }
 
-    // ── CHART DATA HELPERS ────────────────────────────────────────────────
+    // CHART DATA HELPERS
     private List<Map<String, Object>> getLast6MonthsStudentData() {
         // Simplified: count KYC submissions per month
         List<Map<String, Object>> result = new ArrayList<>();
@@ -165,10 +165,10 @@ public class AdminController {
             LocalDate month = LocalDate.now().minusMonths(i).withDayOfMonth(1);
             String label = month.getMonth().toString().substring(0, 3) + " " + month.getYear();
             long count = studentKycRepo.findAll().stream()
-                .filter(k -> k.getSubmittedAt() != null &&
-                    k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getYear() == month.getYear() &&
-                    k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getMonthValue() == month.getMonthValue())
-                .count();
+                    .filter(k -> k.getSubmittedAt() != null &&
+                            k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getYear() == month.getYear() &&
+                            k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getMonthValue() == month.getMonthValue())
+                    .count();
             result.add(Map.of("month", label, "count", count));
         }
         return result;
@@ -180,10 +180,10 @@ public class AdminController {
             LocalDate month = LocalDate.now().minusMonths(i).withDayOfMonth(1);
             String label = month.getMonth().toString().substring(0, 3) + " " + month.getYear();
             long count = hostelKycRepo.findAll().stream()
-                .filter(k -> k.getSubmittedAt() != null &&
-                    k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getYear() == month.getYear() &&
-                    k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getMonthValue() == month.getMonthValue())
-                .count();
+                    .filter(k -> k.getSubmittedAt() != null &&
+                            k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getYear() == month.getYear() &&
+                            k.getSubmittedAt().atZone(java.time.ZoneOffset.UTC).toLocalDate().getMonthValue() == month.getMonthValue())
+                    .count();
             result.add(Map.of("month", label, "count", count));
         }
         return result;
@@ -191,27 +191,40 @@ public class AdminController {
 
     private List<Map<String, Object>> getStudyLevelDistribution() {
         Map<String, Long> grouped = studentKycRepo.findAll().stream()
-            .filter(k -> k.getLevelOfStudy() != null)
-            .collect(Collectors.groupingBy(k -> k.getLevelOfStudy(), Collectors.counting()));
+                .filter(k -> k.getLevelOfStudy() != null)
+                .collect(Collectors.groupingBy(k -> k.getLevelOfStudy(), Collectors.counting()));
         return grouped.entrySet().stream()
-            .map(e -> Map.of("level", (Object)e.getKey(), "count", (Object)e.getValue()))
-            .collect(Collectors.toList());
+                .map(e -> Map.of("level", (Object)e.getKey(), "count", (Object)e.getValue()))
+                .collect(Collectors.toList());
     }
 
     private List<Map<String, Object>> getHostelTypeDistribution() {
         Map<String, Long> grouped = adminService.getAllHostels().stream()
-            .collect(Collectors.groupingBy(h -> h.getHostelType().name(), Collectors.counting()));
+                .collect(Collectors.groupingBy(h -> h.getHostelType().name(), Collectors.counting()));
         return grouped.entrySet().stream()
-            .map(e -> Map.of("type", (Object)e.getKey(), "count", (Object)e.getValue()))
-            .collect(Collectors.toList());
+                .map(e -> Map.of("type", (Object)e.getKey(), "count", (Object)e.getValue()))
+                .collect(Collectors.toList());
     }
 
     private Map<String, Object> getRevenueStats() {
         var allPayments = paymentRepo.findAll();
         var paid = allPayments.stream()
-            .filter(p -> p.getStatus().name().equals("PAID"))
-            .collect(Collectors.toList());
+                .filter(p -> p.getStatus().name().equals("PAID"))
+                .collect(Collectors.toList());
         double total = paid.stream().mapToDouble(p -> p.getAmount().doubleValue()).sum();
         return Map.of("totalRevenue", total, "totalPayments", paid.size());
     }
+
+    // Get admitted students for a specific hostel (for admin detail view)
+    @GetMapping("/hostels/{hostelId}/admissions")
+    public ResponseEntity<ApiResponse<Object>> getHostelAdmissions(@PathVariable UUID hostelId) {
+        var admissions = admissionRepo.findByHostel_HostelIdAndStatusOrderByAdmittedDateDesc(
+                hostelId, com.fyp.HostelMate.entity.enums.AdmissionStatus.ACTIVE);
+        var pending = admissionRepo.findByHostel_HostelIdAndStatusOrderByAdmittedDateDesc(
+                hostelId, com.fyp.HostelMate.entity.enums.AdmissionStatus.PENDING_PAYMENT);
+        var all = new java.util.ArrayList<>(pending);
+        all.addAll(admissions);
+        return ResponseEntity.ok(ApiResponse.success("Hostel admissions", all));
+    }
+
 }

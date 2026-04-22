@@ -28,7 +28,7 @@ public class StudentKycServiceImpl implements StudentKycService {
     private final StudentRepository studentRepo;
     private final StudentKycRepository kycRepo;
 
-    // ── SUBMIT KYC (first time) ────────────────────────────────────────────
+    //  SUBMIT KYC (first time) 
     @Override
     @Transactional
     public void submitKyc(String email, StudentKycRequest req) {
@@ -53,7 +53,7 @@ public class StudentKycServiceImpl implements StudentKycService {
         log.info("KYC submitted for student: {}", email);
     }
 
-    // ── RESUBMIT KYC (after rejection) ────────────────────────────────────
+    //  RESUBMIT KYC (after rejection) 
     @Override
     @Transactional
     public void resubmitKyc(String email, StudentKycRequest req) {
@@ -83,7 +83,7 @@ public class StudentKycServiceImpl implements StudentKycService {
         log.info("KYC resubmitted for student: {}", email);
     }
 
-    // ── GET MY KYC ────────────────────────────────────────────────────────
+    //  GET MY KYC 
     @Override
     public StudentKyc getMyKyc(String email) {
         User user = getUserByEmail(email);
@@ -92,7 +92,7 @@ public class StudentKycServiceImpl implements StudentKycService {
                 .orElseThrow(() -> new ResourceNotFoundException("KYC not submitted yet"));
     }
 
-    // ── UPDATE PROFILE ────────────────────────────────────────────────────
+    //  UPDATE PROFILE 
     @Override
     @Transactional
     public void updateProfile(String email, UpdateStudentProfileRequest req) {
@@ -131,7 +131,7 @@ public class StudentKycServiceImpl implements StudentKycService {
         log.info("Profile updated for student: {}", email);
     }
 
-    // ── PRIVATE HELPERS ───────────────────────────────────────────────────
+    //  PRIVATE HELPERS
 
     private User getUserByEmail(String email) {
         return userRepo.findByEmail(email)

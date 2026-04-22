@@ -21,7 +21,7 @@ public class PaymentController {
 
     private final PaymentServiceImpl paymentService;
 
-    // ── STUDENT PAYMENTS ──────────────────────────────────────────────────
+    // STUDENT PAYMENTS
 
     // Step 1: create a PENDING payment record, returns info for Khalti SDK
     @PostMapping("/api/student/payments/initiate")
@@ -65,7 +65,7 @@ public class PaymentController {
                 .body(pdf);
     }
 
-    // ── HOSTEL PAYMENTS ───────────────────────────────────────────────────
+    // HOSTEL PAYMENTS
 
     // Hostel records a cash payment and generates an invoice
     @PostMapping("/api/hostel/payments/invoice")

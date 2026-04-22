@@ -34,7 +34,7 @@ public class ApplicationServiceImpl {
     private final EmailService emailService;
     private final NotificationUtil notificationUtil;
 
-    // ── STUDENT: APPLY TO HOSTEL ──────────────────────────────────────────
+    //  STUDENT: APPLY TO HOSTEL 
     @Transactional
     public Application applyToHostel(String studentEmail, UUID hostelId, ApplyRequest req) {
 
@@ -74,19 +74,19 @@ public class ApplicationServiceImpl {
         return saved;
     }
 
-    // ── STUDENT: VIEW MY APPLICATIONS ────────────────────────────────────
+    //  STUDENT: VIEW MY APPLICATIONS 
     public List<Application> getMyApplications(String studentEmail) {
         Student student = getStudentByEmail(studentEmail);
         return applicationRepo.findByStudent_StudentIdOrderByAppliedAtDesc(student.getStudentId());
     }
 
-    // ── HOSTEL: VIEW APPLICATIONS RECEIVED ───────────────────────────────
+    //  HOSTEL: VIEW APPLICATIONS RECEIVED
     public List<Application> getHostelApplications(String hostelEmail) {
         Hostel hostel = getHostelByEmail(hostelEmail);
         return applicationRepo.findByHostel_HostelIdOrderByAppliedAtDesc(hostel.getHostelId());
     }
 
-    // ── HOSTEL: ACCEPT APPLICATION + ALLOT ROOM ───────────────────────────
+    //  HOSTEL: ACCEPT APPLICATION + ALLOT ROOM
     @Transactional
     public void acceptApplication(String hostelEmail, UUID applicationId,
                                    AcceptApplicationRequest req) {
@@ -122,7 +122,7 @@ public class ApplicationServiceImpl {
         log.info("Application {} accepted by hostel", applicationId);
     }
 
-    // ── HOSTEL: SCHEDULE VISIT ────────────────────────────────────────────
+    //  HOSTEL: SCHEDULE VISIT 
     @Transactional
     public void scheduleVisit(String hostelEmail, UUID applicationId, ScheduleVisitRequest req) {
 
@@ -149,7 +149,7 @@ public class ApplicationServiceImpl {
         log.info("Visit scheduled for application {}", applicationId);
     }
 
-    // ── HOSTEL: ADMIT AFTER VISIT ─────────────────────────────────────────
+    //  HOSTEL: ADMIT AFTER VISIT
     @Transactional
     public void admitAfterVisit(String hostelEmail, UUID applicationId,
                                  AcceptApplicationRequest req) {
@@ -199,7 +199,7 @@ public class ApplicationServiceImpl {
         log.info("Student admitted after visit, application {}", applicationId);
     }
 
-    // ── HOSTEL: REJECT / CANCEL APPLICATION ──────────────────────────────
+    //  HOSTEL: REJECT / CANCEL APPLICATION 
     @Transactional
     public void rejectApplication(String hostelEmail, UUID applicationId,
                                    RejectApplicationRequest req) {
@@ -225,7 +225,7 @@ public class ApplicationServiceImpl {
         log.info("Application {} rejected", applicationId);
     }
 
-    // ── PRIVATE HELPERS ───────────────────────────────────────────────────
+    //  PRIVATE HELPERS
 
     // Creates the admission record and generates the first payment (admission fee)
     private void createAdmissionAndFeePayment(Application app) {
@@ -262,7 +262,7 @@ public class ApplicationServiceImpl {
         paymentRepo.save(admissionFee);
     }
 
-    // ── HOSTEL: ALLOCATE ROOM AFTER PAYMENT ───────────────────────────────
+    //  HOSTEL: ALLOCATE ROOM AFTER PAYMENT
     @Transactional
     public void allocateRoom(String hostelEmail, UUID admissionId, UUID roomId) {
         Hostel hostel = getHostelByEmail(hostelEmail);
@@ -326,7 +326,7 @@ public class ApplicationServiceImpl {
         return app;
     }
 
-    // ── HOSTEL: DELETE APPLICATION ────────────────────────────────────────
+    //  HOSTEL: DELETE APPLICATION 
     @Transactional
     public void deleteApplication(String hostelEmail, UUID applicationId) {
         Application app = getApplicationForHostel(hostelEmail, applicationId);
@@ -338,7 +338,7 @@ public class ApplicationServiceImpl {
         log.info("Application {} deleted by hostel", applicationId);
     }
 
-    // ── STUDENT: CANCEL APPLICATION ───────────────────────────────────────
+    //  STUDENT: CANCEL APPLICATION
     @Transactional
     public void cancelApplication(String studentEmail, UUID applicationId) {
         Student student = getStudentByEmail(studentEmail);

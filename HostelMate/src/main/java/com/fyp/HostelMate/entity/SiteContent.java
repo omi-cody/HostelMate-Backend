@@ -18,7 +18,7 @@ public class SiteContent {
     @Column(name = "id")
     private Long id = 1L;
 
-    // ── HERO ─────────────────────────────────────────────────────────────
+    //  HERO 
     @Column(name = "hero_title", columnDefinition = "TEXT")
     private String heroTitle;
 
@@ -28,19 +28,19 @@ public class SiteContent {
     @Column(name = "hero_button_text")
     private String heroButtonText;
 
-    // ── ABOUT ─────────────────────────────────────────────────────────────
+    //  ABOUT 
     @Column(name = "about_title")
     private String aboutTitle;
 
     @Column(name = "about_description", columnDefinition = "TEXT")
     private String aboutDescription;
 
-    // ── FEATURES ─────────────────────────────────────────────────────────
+    //  FEATURES 
     // JSON: [{ title, description, icon }, ...]
     @Column(name = "features_json", columnDefinition = "TEXT")
     private String featuresJson;
 
-    // ── CONTACT ──────────────────────────────────────────────────────────
+    //  CONTACT 
     @Column(name = "contact_phone")
     private String contactPhone;
 
@@ -50,14 +50,14 @@ public class SiteContent {
     @Column(name = "contact_address")
     private String contactAddress;
 
-    // ── FOOTER ───────────────────────────────────────────────────────────
+    //  FOOTER 
     @Column(name = "footer_tagline", columnDefinition = "TEXT")
     private String footerTagline;
 
     @Column(name = "footer_copyright")
     private String footerCopyright;
 
-    // ── BRANDING ─────────────────────────────────────────────────────────
+    //  BRANDING 
     @Column(name = "system_logo_url")
     private String systemLogoUrl;
 

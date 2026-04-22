@@ -33,7 +33,7 @@ public class StudentKyc {
     @JsonIgnoreProperties({"studentKyc", "applications", "payments", "complaintRequests", "notifications"})
     private Student student;
 
-    // --- Personal details ---
+    //  Personal details 
     @Column(name = "profile_photo_url")
     private String profilePhotoUrl;
 
@@ -45,7 +45,7 @@ public class StudentKyc {
     @Column(name = "diet_type", nullable = false)
     private DietType dietType;  // VEG or NON_VEG
 
-    // --- Guardian details ---
+    //  Guardian details 
     @Column(name = "guardian_name", nullable = false)
     private String guardianName;
 
@@ -55,7 +55,7 @@ public class StudentKyc {
     @Column(name = "guardian_phone", nullable = false)
     private String guardianPhone;
 
-    // --- Document details ---
+    //  Document details 
     @Enumerated(EnumType.STRING)
     @Column(name = "document_type", nullable = false)
     private DocumentType documentType;  // CITIZENSHIP, VOTER_ID, NATIONAL_ID
@@ -66,7 +66,7 @@ public class StudentKyc {
     @Column(name = "document_photo_url", nullable = false)
     private String documentPhotoUrl;
 
-    // --- Institute details ---
+    //  Institute details 
     @Column(name = "institute_name", nullable = false)
     private String instituteName;
 
@@ -76,7 +76,7 @@ public class StudentKyc {
     @Column(name = "level_of_study", nullable = false)
     private String levelOfStudy;  // e.g. Bachelor, Master, Diploma, +2
 
-    // --- Permanent address ---
+    //  Permanent address 
     @Column(nullable = false)
     private String province;
 
@@ -92,7 +92,7 @@ public class StudentKyc {
     @Column(name = "ward_number", nullable = false)
     private String wardNumber;
 
-    // --- Admin verification fields ---
+    //  Admin verification fields 
     // Status here mirrors the user's verificationStatus but keeps rejection remarks
     @Enumerated(EnumType.STRING)
     @Column(name = "kyc_status", nullable = false)

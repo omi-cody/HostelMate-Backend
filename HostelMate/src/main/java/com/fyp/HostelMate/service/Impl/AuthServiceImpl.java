@@ -39,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final OtpService otpService;
     private final EmailService emailService;
 
-    // ── STUDENT REGISTRATION ───────────────────────────────────────────────
+    //  STUDENT REGISTRATION
     @Override
     @Transactional
     public void registerStudent(StudentRegistrationRequest req) {
@@ -73,7 +73,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Student registered: {}", user.getEmail());
     }
 
-    // ── HOSTEL REGISTRATION ────────────────────────────────────────────────
+    //  HOSTEL REGISTRATION 
     @Override
     @Transactional
     public void registerHostel(HostelRegistrationRequest req) {
@@ -107,7 +107,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Hostel registered: {}", user.getEmail());
     }
 
-    // ── LOGIN ──────────────────────────────────────────────────────────────
+    //  LOGIN 
     @Override
     public AuthResponse login(LoginRequest req) {
 
@@ -122,6 +122,7 @@ public class AuthServiceImpl implements AuthService {
 
         String token = jwtService.generateToken(user);
 
+
         // kycVerified = true means the user has full access to system features.
         // The frontend uses this to decide whether to redirect to KYC form or dashboard.
         boolean kycVerified = user.getVerificationStatus() == VerificationStatus.VERIFIED;
@@ -135,7 +136,7 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-    // ── FORGOT PASSWORD: STEP 1 - send OTP ────────────────────────────────
+    //  FORGOT PASSWORD: STEP 1 - send OTP 
     @Override
     public void sendForgotPasswordOtp(ForgotPasswordRequest req) {
 
@@ -151,7 +152,7 @@ public class AuthServiceImpl implements AuthService {
         log.info("Forgot password OTP sent to: {}", user.getEmail());
     }
 
-    // ── FORGOT PASSWORD: STEP 2 - verify OTP ──────────────────────────────
+    //  FORGOT PASSWORD: STEP 2 - verify OTP 
     @Override
     public boolean verifyOtp(VerifyOtpRequest req) {
         // peekOtp checks the OTP WITHOUT consuming (removing) it from the store.
@@ -160,7 +161,7 @@ public class AuthServiceImpl implements AuthService {
         return otpService.peekOtp(req.getEmail(), req.getOtp());
     }
 
-    // ── FORGOT PASSWORD: STEP 3 - set new password ────────────────────────
+    //  FORGOT PASSWORD: STEP 3 - set new password 
     @Override
     @Transactional
     public void resetPasswordWithOtp(ResetPasswordWithOtpRequest req) {
